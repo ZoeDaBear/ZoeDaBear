@@ -432,17 +432,17 @@ class MathTutorAI:
             json.dump(data, file)
 
     def load_progress(self, file_path="progress.json"):
-    """Load user progress from a file."""
-    if os.path.exists(file_path):
-        try:
-            with open(file_path, "r", encoding="utf-8") as file:
-                data = json.load(file)
+        """Load user progress from a file."""
+        if os.path.exists(file_path):
+            try:
+                data = json.load(open(file_path))
+            except (json.JSONDecodeError, IOError):
+                print("Error: Unable to read progress file. Starting with default progress.")
+            else:
                 self.grade_level = data.get("grade_level", 0)
                 self.difficulty = data.get("difficulty", "Easy")
                 self.correct_answers = data.get("correct_answers", 0)
                 self.total_questions = data.get("total_questions", 0)
-        except (json.JSONDecodeError, IOError):
-            print("Error: Unable to read progress file. Starting with default progress.")
 
 
 class MathTutor:
@@ -503,19 +503,18 @@ class MathTutor:
     )
     start_button.grid(row=3, columnspan=2, pady=(10, 0))
     
-        def start_tutoring_session(self):
+    def start_tutoring_session(self):
             """Start a new tutoring session."""
-            self.tutor_ai.set_grade_level(self.grade_level_var.get())
-            self.tutor_ai.set_difficulty(self.difficulty_var.get())
-            self.tutor_ai.set_language(self.language_var.get())
-            self.problem_statement, self.problem_solution = self.tutor_ai.generate_problem()
-            self.problem_label.config(text=self.problem_statement)
-            self.problem_entry.delete(0, tk.END)
-            self.explanation_label.config(text="")
-            self.progress_label.config(text=self.tutor_ai.get_progress_report())
-            self.timer_running = True
-            self.start_time = time.time()
-        start_button.grid(row=3, columnspan=2, pady=(10, 0))
+        self.tutor_ai.set_grade_level(self.grade_level_var.get())
+        self.tutor_ai.set_difficulty(self.difficulty_var.get())
+        self.tutor_ai.set_language(self.language_var.get())
+        self.problem_statement, self.problem_solution = self.tutor_ai.generate_problem()
+        self.problem_label.config(text=self.problem_statement)
+        self.problem_entry.delete(0, tk.END)
+        self.explanation_label.config(text="")
+        self.progress_label.config(text=self.tutor_ai.get_progress_report())
+        self.timer_running = True
+        self.start_time = time.time()
 
         # Frame for problem display
         problem_frame = ttk.LabelFrame(self.root, text="Problem")
