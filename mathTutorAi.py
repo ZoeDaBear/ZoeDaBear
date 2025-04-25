@@ -1,8 +1,23 @@
+import winsound  
+import json
 import random
 import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox
 import sympy as sp
 from math import isclose
+ 
+def save_progress(self):
+    data = {"correct_count": self.correct_count, "total_problems": self.total_problems}
+    with open("progress.json", "w") as file:
+        json.dump(data, file)
+
+def load_progress(self):
+    try:
+        with open("progress.json", "r") as file:
+            data = json.load(file)
+            self.correct_count = data.get("correct_count", 0)
+            self.total_problems = data.get("total_problems", 0)
+            self.update_progress(False)  # Update the status bar
 
 class MathTutorAI:
     """
@@ -83,6 +98,15 @@ class MathTutorAI:
             range_start=-20, 
             range_end=20
         )
+
+        def set_theme(self, theme):
+    if theme == "dark":
+        self.style.configure('TFrame', background="#2C3E50")
+        self.style.configure('TLabel', foreground="white")
+        # Update other styles similarly
+    elif theme == "light":
+        self.style.configure('TFrame', background="#F0F4F8")
+        self.style.configure('TLabel', foreground="#2C3E50")
         
         operation = random.choice(self.operations)
         
@@ -105,6 +129,10 @@ class MathTutorAI:
         Returns:
             tuple: (problem_statement, solution)
         """
+        
+    except FileNotFoundError:
+        self.correct_count = 0
+        self.total_problems = 0
         # Generate different problem types based on difficulty and grade
         problem_type = random.choice(["algebra", "geometry", "calculus", "word"])
         
@@ -438,6 +466,11 @@ class MathTutorApp:
         self.grade_combobox.bind("<<ComboboxSelected>>", self.update_grade_level)
         
         # Difficulty selection
+        ttk.Label(self.settings_frame, text="Category:").grid(row=1, column=0, padx=5, pady=5, sticky=tk.W)
+        self.category_var = tk.StringVar(value="Random")
+        self.category_combobox = ttk.Combobox(self.settings_frame, values=["Random", "Algebra", "Geometry", "Calculus"], 
+                                      textvariable=self.category_var, state="readonly", width=15)
+        self.category_combobox.grid(row=1, column=1, padx=5, pady=5, sticky=tk.W)
         ttk.Label(self.settings_frame, text="Difficulty:").grid(row=0, column=2, padx=5, pady=5, sticky=tk.W)
         self.difficulty_var = tk.StringVar(value="Easy")
         self.difficulty_combobox = ttk.Combobox(self.settings_frame, values=["Easy", "Medium", "Hard"], 
@@ -593,7 +626,10 @@ class MathTutorApp:
         """Display an incorrect answer message"""
         self.set_explanation_text(f"Incorrect. Try again or click 'Show Solution' for help.")
         self.status_var.set("Answer is incorrect")
-        
+   
+    def explain_problem(self, problem, solution):
+    return f"Steps to Solve:\n1. Understand the problem.\n2. Apply the correct formula or operation.\n3. Verify your result.\n\nSolution: {solution}"    
+    
     def show_solution(self):
         """Display the solution and explanation"""
         if self.current_problem is None or self.current_solution is None:
@@ -635,3 +671,24 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
+def play_sound(correct):
+    if correct:
+        winsound.Beep(1000, 200)  # High-pitched beep
+    else:
+        winsound.Beep(400, 200)  # Low-pitched beep
+
+def show_correct_answer(self):
+    """Display a correct answer message and explanation"""
+    messages = ["Great job!", "Keep it up!", "You’re doing fantastic!", "Well done!"]
+    encouragement = random.choice(messages)
+    explanation = self.math_tutor.explain_problem(self.current_problem, self.current_solution)
+    self.set_explanation_text(f"Correct! {encouragement}\n\n{explanation}")
+    self.status_var.set("Answer is correct!")
+
+def update_progress(self, correct):
+    self.total_problems += 1
+    if correct:
+        self.correct_count += 1
+    accuracy = (self.correct_count / self.total_problems) * 100
+    self.status_var.set(f"Progress: {self.correct_count}/{self.total_problems} correct ({accuracy:.1f}% accuracy)")
