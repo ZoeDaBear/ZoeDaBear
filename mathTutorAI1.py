@@ -432,14 +432,17 @@ class MathTutorAI:
             json.dump(data, file)
 
     def load_progress(self, file_path="progress.json"):
-        """Load user progress from a file."""
-        if os.path.exists(file_path):
+    """Load user progress from a file."""
+    if os.path.exists(file_path):
+        try:
             with open(file_path, "r", encoding="utf-8") as file:
                 data = json.load(file)
                 self.grade_level = data.get("grade_level", 0)
                 self.difficulty = data.get("difficulty", "Easy")
                 self.correct_answers = data.get("correct_answers", 0)
                 self.total_questions = data.get("total_questions", 0)
+        except (json.JSONDecodeError, IOError):
+            print("Error: Unable to read progress file. Starting with default progress.")
 
 
 class MathTutor:
@@ -494,11 +497,11 @@ class MathTutor:
         )
         language_combobox.grid(row=2, column=1, padx=5, pady=5)
 
-            # Start button
-            start_button = ttk.Button(
-                settings_frame, text="Start", command=self.start_tutoring_session
-            )
-            start_button.grid(row=3, columnspan=2, pady=(10, 0))
+    # Start button
+    start_button = ttk.Button(
+        settings_frame, text="Start", command=self.start_tutoring_session
+    )
+    start_button.grid(row=3, columnspan=2, pady=(10, 0))
     
         def start_tutoring_session(self):
             """Start a new tutoring session."""
@@ -549,5 +552,3 @@ class MathTutor:
         self.problem_time_taken = None
         self.problem_attempts = 0
         self.problem_correct = False
-        self.problem_attempts = 0
-        self.problem_attempts = 0
