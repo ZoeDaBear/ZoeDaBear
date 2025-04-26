@@ -4,17 +4,33 @@ import random
 import time
 import tkinter as tk
 from tkinter import ttk
-# Removed unused imports: simpledialog, messagebox
+from tkinter import simpledialog, messagebox
 import sympy as sp
 
 
 class UserManager:
     """Class to manage multiple user profiles."""
 
-     def __init__(self, user_manager, username):
-        self.user_manager = user_manager
-        self.username = username
-        self.load_user_data()
+    def __init__(self):
+        self.users = {}  # Initialize users dictionary
+        self.load_users()  # Load users from file on initialization
+
+    def load_users(self, file_path="users.json"):
+        """Load all users from a JSON file."""
+        if os.path.exists(file_path):
+            try:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    self.users = json.load(f)
+            except (json.JSONDecodeError, IOError):
+                print("Error loading users. Starting with an empty user list.")
+                self.users = {}
+        else:
+            self.users = {}
+
+    def save_users(self, file_path="users.json"):
+        """Save all users to a JSON file."""
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump(self.users, f)
 
     def load_user_data(self):
         """Load data for the current user."""
@@ -36,7 +52,7 @@ class UserManager:
             "total_questions": self.total_questions
         }
         self.user_manager.update_user_data(self.username, data)
-        
+
     def add_user(self, username):
         """Add a new user."""
         if username in self.users:
@@ -59,12 +75,19 @@ class UserManager:
             raise ValueError(f"User '{username}' does not exist.")
         self.users[username].update(data)
         self.save_users()
-        
+
+
 class MathTutorAI:
     """Math Tutor AI for generating and solving math problems."""
 
     def __init__(self):
         self.operations = ["+", "-", "*", "/"]
+        self.grade_level = 0  # Initialize grade_level
+        self.difficulty = "Easy"  # Initialize difficulty
+        self.language = "en"  # Initialize language
+        self.correct_answers = 0  # Initialize correct_answers
+        self.total_questions = 0  # Initialize total_questions
+        self.start_time = None  # Initialize start_time
 
     def set_grade_level(self, grade):
         self.grade_level = grade
@@ -245,15 +268,16 @@ class MathTutorAI:
 
     def save_progress(self):
         """Save progress for the current user."""
-        self.save_user_data()
+        pass
 
     def load_progress(self):
         """Load progress for the current user."""
-        self.load_user_data()
+        pass
 
 class User:
     def __init__(self, username, grade_level=0, difficulty="Easy", language="en", correct_answers=0, total_questions=0):
         self.username = username
+        self.current_user = None  # Initialize current_user in __init__
         self.grade_level = grade_level
         self.difficulty = difficulty
         self.language = language
@@ -265,25 +289,42 @@ class MathTutor:
     """GUI Application for MathTutorAI."""
 
     def show_leaderboard(self):
-    """Display a leaderboard of users based on their progress."""
-    leaderboard_window = tk.Toplevel(self.root)
-    leaderboard_window.title("Leaderboard")
-    
-    sorted_users = sorted(
-        self.user_manager.users.items(),
-        key=lambda item: item[1]["correct_answers"],
-        reverse=True
-    )
-    
-    def __init__(self, root, username):
+        """Display a leaderboard of users based on their progress."""
+        # Reload user data to ensure the leaderboard reflects the latest progress
+        self.user_manager.load_users()
+
+        leaderboard_window = tk.Toplevel(self.root)
+        leaderboard_window.title("Leaderboard")
+
+        sorted_users = sorted(
+            self.user_manager.users.items(),
+            key=lambda item: item[1]["correct_answers"],
+            reverse=True
+        )
+
+        ttk.Label(leaderboard_window, text="Leaderboard", font=("Arial", 16)).grid(row=0, column=0, columnspan=4, pady=10)
+        ttk.Label(leaderboard_window, text="Rank").grid(row=1, column=0, padx=10, pady=5)
+        ttk.Label(leaderboard_window, text="Username").grid(row=1, column=1, padx=10, pady=5)
+        ttk.Label(leaderboard_window, text="Correct/Total").grid(row=1, column=2, padx=10, pady=5)
+        ttk.Label(leaderboard_window, text="Accuracy").grid(row=1, column=3, padx=10, pady=5)
+
+        for i, (username, data) in enumerate(sorted_users):
+            correct_answers = data.get("correct_answers", 0)
+            total_questions = data.get("total_questions", 0)
+            accuracy = (correct_answers / total_questions * 100) if total_questions > 0 else 0
+            ttk.Label(leaderboard_window, text=f"{i+1}").grid(row=i+2, column=0, padx=10, pady=5)
+            ttk.Label(leaderboard_window, text=username).grid(row=i+2, column=1, padx=10, pady=5)
+            ttk.Label(leaderboard_window, text=f"{correct_answers}/{total_questions}").grid(row=i+2, column=2, padx=10, pady=5)
+            ttk.Label(leaderboard_window, text=f"{accuracy:.2f}%").grid(row=i+2, column=3, padx=10, pady=5)
+
+
+    def __init__(self, root):
+        self.user_var = tk.StringVar()  # Initialize user_var
         self.root = root
-        self.root.title("Math Tutor AI - User: " + username)
-        self.tutor_ai = MathTutorAI(self.user_manager, self.current_user)
-        self.username = username
-        self.user = self.load_user_progress(username)  # Load or create user
-        self.tutor_ai.grade_level = self.user.grade_level
-        self.tutor_ai.difficulty = self.user.difficulty
-        self.tutor_ai.language = self.user.language
+        self.root.title("Math Tutor AI")
+        self.tutor_ai = MathTutorAI()  # Initialize MathTutorAI
+        self.user_manager = UserManager()  # Initialize UserManager
+        self.user = None  # Initialize user as None
 
         self.problem = ""
         self.solution = None
@@ -291,7 +332,84 @@ class MathTutor:
         self.timer_running = False
         self.start_time = None
 
-        self.create_widgets()
+        self.create_user_selection_widgets()  # Start with user selection
+
+    def delete_user(self):
+        """Delete an existing user."""
+        username = self.user_var.get()
+        if username:
+            confirm = tk.messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete user '{username}'?")
+            if confirm:
+                try:
+                    del self.user_manager.users[username]
+                    self.user_manager.save_users()
+                    self.user_var.set("")
+                    self.user_dropdown["values"] = list(self.user_manager.users.keys())
+                    tk.messagebox.showinfo("Success", f"User '{username}' deleted successfully.")
+                except KeyError:
+                    tk.messagebox.showerror("Error", f"User '{username}' does not exist.")
+        else:
+            tk.messagebox.showerror("Error", "No user selected.")
+
+    def create_user_selection_widgets(self):
+        """Create user selection and authentication widgets."""
+        user_frame = ttk.LabelFrame(self.root, text="User Management")
+        user_frame.grid(row=0, column=0, padx=10, pady=10)
+
+        ttk.Label(user_frame, text="Select User:").grid(row=0, column=0, padx=5, pady=5)
+        self.user_dropdown = ttk.Combobox(
+            user_frame, textvariable=self.user_var,
+            values=list(self.user_manager.users.keys()), state="readonly"
+        )
+        self.user_dropdown.grid(row=0, column=1, padx=5, pady=5)
+
+        select_button = ttk.Button(user_frame, text="Login", command=self.select_user)
+        select_button.grid(row=0, column=2, padx=5, pady=5)
+
+        ttk.Label(user_frame, text="New User:").grid(row=1, column=0, padx=5, pady=5)
+        self.new_user_var = tk.StringVar()
+        new_user_entry = ttk.Entry(user_frame, textvariable=self.new_user_var)
+        new_user_entry.grid(row=1, column=1, padx=5, pady=5)
+
+        add_button = ttk.Button(user_frame, text="Create User", command=self.add_user)
+        add_button.grid(row=1, column=2, padx=5, pady=5)
+
+        # Delete User Button
+        delete_button = ttk.Button(user_frame, text="Delete User", command=self.delete_user)
+        delete_button.grid(row=2, column=0, columnspan=3, pady=10)
+
+        # Leaderboard Button
+        leaderboard_button = ttk.Button(user_frame, text="Leaderboard", command=self.show_leaderboard)
+        leaderboard_button.grid(row=3, column=0, columnspan=3, pady=10)
+
+    def select_user(self):
+        """Select an existing user and initialize MathTutorAI."""
+        username = self.user_var.get()
+        if username:
+            self.user = self.user_manager.get_user_data(username)
+            if self.user:
+                self.tutor_ai.grade_level = self.user["grade_level"]
+                self.tutor_ai.difficulty = self.user["difficulty"]
+                self.tutor_ai.correct_answers = self.user["correct_answers"]
+                self.tutor_ai.total_questions = self.user["total_questions"]
+                self.root.title(f"Math Tutor AI - User: {username}")
+                self.create_widgets()
+            else:
+                tk.messagebox.showerror("Error", "User not found.")
+
+    def add_user(self):
+        """Add a new user profile."""
+        new_username = self.new_user_var.get().strip()
+        if new_username:
+            try:
+                self.user_manager.add_user(new_username)
+                self.user_var.set(new_username)
+                self.user_dropdown["values"] = list(self.user_manager.users.keys())
+                tk.messagebox.showinfo("Success", f"User '{new_username}' created successfully.")
+            except ValueError as e:
+                tk.messagebox.showerror("Error", str(e))
+        else:
+            tk.messagebox.showerror("Error", "Username cannot be empty.")
 
     def save_user_progress(self, user, file_path="users_progress"):
         if not os.path.exists(file_path):
@@ -364,9 +482,8 @@ class MathTutor:
         """Create user selection and authentication widgets."""
         user_frame = ttk.LabelFrame(self.root, text="User Management")
         user_frame.grid(row=0, column=0, padx=10, pady=10)
-
         ttk.Label(user_frame, text="Select User:").grid(row=0, column=0, padx=5, pady=5)
-        self.user_var = tk.StringVar()
+        self.user_dropdown = ttk.Combobox(user_frame, textvariable=self.user_var, values=list(self.user_manager.users.keys()), state="readonly")
         self.user_dropdown = ttk.Combobox(user_frame, textvariable=self.user_var, values=list(self.user_manager.users.keys()), state="readonly")
         self.user_dropdown.grid(row=0, column=1, padx=5, pady=5)
 
@@ -381,13 +498,24 @@ class MathTutor:
         add_button = ttk.Button(user_frame, text="Add User", command=self.add_user)
         add_button.grid(row=1, column=2, padx=5, pady=5)
 
+        # Delete User Button
+        delete_button = ttk.Button(user_frame, text="Delete User", command=self.delete_user)
+        delete_button.grid(row=2, column=0, columnspan=3, pady=10)
+
+        # Leaderboard Button
+        leaderboard_button = ttk.Button(user_frame, text="Leaderboard", command=self.show_leaderboard)
+        leaderboard_button.grid(row=3, column=0, columnspan=3, pady=10)
+
     def select_user(self):
         """Select an existing user and initialize MathTutorAI."""
         username = self.user_var.get()
-        if username:
-            self.current_user = username
-            self.tutor_ai = MathTutorAI(self.user_manager, username)
-            self.create_widgets()
+        self.user = self.load_user_progress(username)  # Correctly load user progress
+        self.tutor_ai.grade_level = self.user.grade_level
+        self.tutor_ai.difficulty = self.user.difficulty
+        self.tutor_ai.language = self.user.language
+        self.tutor_ai.correct_answers = self.user.correct_answers
+        self.tutor_ai.total_questions = self.user.total_questions
+        self.create_widgets()
 
     def add_user(self):
         """Add a new user profile."""
@@ -400,7 +528,7 @@ class MathTutor:
                 self.select_user()
             except ValueError as e:
                 tk.messagebox.showerror("Error", str(e))
-    
+
     def create_widgets(self):
         """Create all GUI widgets."""
 
@@ -439,6 +567,14 @@ class MathTutor:
         # Start Button
         start_button = ttk.Button(settings_frame, text="Start", command=self.start_tutoring_session)
         start_button.grid(row=3, column=0, columnspan=2, pady=10)
+
+        # Dark Mode Button
+        dark_mode_button = ttk.Button(settings_frame, text="Toggle Dark Mode", command=self.toggle_dark_mode)
+        dark_mode_button.grid(row=4, column=0, columnspan=2, pady=5)
+
+        # Return to Main Menu Button
+        return_button = ttk.Button(settings_frame, text="Return to Main Menu", command=self.return_to_main_menu)
+        return_button.grid(row=5, column=0, columnspan=2, pady=5)
 
         # --- Problem Frame ---
         problem_frame = ttk.LabelFrame(self.root, text="Problem")
@@ -488,11 +624,6 @@ class MathTutor:
         self.progress_var = tk.StringVar(value="Progress: 0/0 correct (0.00% accuracy)")
         self.progress_label = ttk.Label(problem_frame, textvariable=self.progress_var)
         self.progress_label.grid(row=5, column=0, pady=2)
-        
-        ttk.Label(leaderboard_window, text="Leaderboard", font=("Arial", 16)).grid(row=0, column=0, columnspan=2, pady=10)
-        for i, (username, data) in enumerate(sorted_users):
-        ttk.Label(leaderboard_window, text=f"{i+1}. {username}").grid(row=i+1, column=0, padx=10, pady=5)
-        ttk.Label(leaderboard_window, text=f"{data['correct_answers']} Correct Answers").grid(row=i+1, column=1, padx=10, pady=5)
 
     def start_tutoring_session(self):
         """Initialize a new tutoring session."""
@@ -538,12 +669,24 @@ class MathTutor:
                 self.feedback_var.set(f"Incorrect. {explanation}")
 
             self.progress_var.set(self.tutor_ai.get_progress_report())
-            self.tutor_ai.save_progress()
+
+            # Auto-save progress after each problem
+            self.save_progress()
 
             self.root.after(2000, self.next_problem)  # Move to next after 2 seconds
 
         except ValueError:
             self.feedback_var.set("Invalid input. Please enter a valid number.")
+
+    def save_progress(self):
+        """Manually save progress."""
+        self.user.grade_level = self.tutor_ai.grade_level
+        self.user.difficulty = self.tutor_ai.difficulty
+        self.user.correct_answers = self.tutor_ai.correct_answers
+        self.user.total_questions = self.tutor_ai.total_questions
+        self.user.language = self.tutor_ai.language
+        self.save_user_progress(self.user)
+        self.feedback_var.set("Progress saved! 💾")
 
     def show_hint(self):
         """Show a hint based on the problem type."""
@@ -558,8 +701,8 @@ class MathTutor:
 
         self.feedback_var.set(f"Hint: {hint}")
 
-    def provide_hint(self):
-        """Provide a hint for the current problem."""
+    def provide_hint(self, topic):
+        """Provide a hint for the given topic."""
         hints = {
             "algebra": "Try isolating the variable on one side of the equation.",
             "geometry": "Remember the formulas for area, volume, and the Pythagorean theorem.",
@@ -575,8 +718,14 @@ class MathTutor:
             self.timer_var.set(f"Time: {elapsed} seconds")
             self.root.after(1000, self.update_timer)
 
+    def return_to_main_menu(self):
+        """Return to the main menu (user selection screen)."""
+        for widget in self.root.winfo_children():
+            widget.destroy()  # Clear all widgets
+        self.create_user_selection_widgets()
+
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = MathTutor(root, username="DefaultUser")
+    app = MathTutor(root)
     root.mainloop()
