@@ -1,0 +1,363 @@
+import tkinter as tk
+from tkinter import ttk
+from tkinter import simpledialog, messagebox
+import json
+import os
+import bcrypt  # For password hashing (install: pip install bcrypt)
+import random
+import time
+import sympy as sp
+
+
+class MathTutorAI:
+    """Math Tutor AI for generating and solving math problems."""
+
+    def __init__(self):
+        self.operations = ["+", "-", "*", "/"]
+
+    def set_grade_level(self, grade):
+        self.grade_level = grade
+
+    def set_difficulty(self, difficulty):
+        if difficulty not in ["Easy", "Medium", "Hard"]:
+            raise ValueError("Difficulty must be 'Easy', 'Medium', or 'Hard'")
+        self.difficulty = difficulty
+
+    def set_language(self, language):
+        supported_languages = ["en", "es", "fr"]
+        if language not in supported_languages:
+            raise ValueError(f"Language must be one of {supported_languages}")
+        self.language = language
+
+    def start_timer(self):
+        self.start_time = time.time()
+
+    def stop_timer(self):
+        if self.start_time is None:
+            return 0
+        return time.time() - self.start_time
+
+    def generate_problem(self):
+        if self.grade_level <= 5:
+            return self.generate_elementary_problem()
+        elif self.grade_level <= 8:
+            return self.generate_middle_school_problem()
+        elif self.grade_level <= 12:
+            return self.generate_high_school_problem()
+        else:
+            raise ValueError("Grade level must be between 0 and 12")
+
+    def generate_elementary_problem(self):
+        num1, num2 = self.get_random_numbers(self.difficulty)
+        operation = random.choice(self.operations)
+        if operation == "/":
+            num2 = self.make_divisible(num1)
+        problem = f"{num1} {operation} {num2}"
+        solution = self.solve_problem(num1, num2, operation)
+        return problem, solution
+
+    def generate_middle_school_problem(self):
+        num1, num2 = self.get_random_numbers(self.difficulty, range_start=-20)
+        operation = random.choice(self.operations)
+        if operation == "/":
+            num2 = self.make_divisible(num1, extended_range=True)
+        problem = f"{num1} {operation} {num2}"
+        solution = self.solve_problem(num1, num2, operation)
+        return problem, solution
+
+    def generate_high_school_problem(self):
+        problem_types = ["algebra", "geometry", "calculus", "word"]
+        problem_type = random.choice(problem_types)
+        if problem_type == "algebra":
+            return self.generate_algebra_problem()
+        elif problem_type == "geometry":
+            return self.generate_geometry_problem()
+        elif problem_type == "calculus":
+            return self.generate_calculus_problem()
+        else:
+            return self.generate_word_problem()
+
+    def generate_algebra_problem(self):
+        x = sp.symbols("x")
+        if self.difficulty == "Easy":
+            a, b, c = random.randint(1, 5), random.randint(1, 10), random.randint(1, 20)
+            equation = sp.Eq(a * x + b, c)
+            solution = sp.solve(equation, x)[0]
+        else:
+            a, b, c = random.randint(1, 5), random.randint(-10, 10), random.randint(-20, 20)
+            equation = sp.Eq(a * x**2 + b * x + c, 0)
+            solution = sp.solve(equation, x)
+        problem = f"Solve for x: {sp.latex(equation)}"
+        return problem, solution
+
+    def generate_geometry_problem(self):
+        if self.difficulty == "Easy":
+            radius = random.randint(1, 5)
+            area = sp.pi * radius**2
+            problem = f"Find the area of a circle with radius {radius} units."
+            return problem, float(area.evalf())
+        elif self.difficulty == "Medium":
+            l, w, h = random.randint(5, 10), random.randint(5, 10), random.randint(5, 10)
+            volume = l * w * h
+            problem = f"Find the volume of a rectangular prism with length {l}, width {w}, height {h} units."
+            return problem, volume
+        else:
+            a, b = random.randint(5, 15), random.randint(5, 15)
+            hypotenuse = sp.sqrt(a**2 + b**2)
+            problem = f"Find the hypotenuse of a right triangle with legs {a} and {b} units."
+            return problem, float(hypotenuse.evalf())
+
+    def generate_calculus_problem(self):
+        x = sp.symbols("x")
+        if self.difficulty == "Easy":
+            coeff = [random.randint(1, 5) for _ in range(3)]
+            func = coeff[0]*x**2 + coeff[1]*x + coeff[2]
+        elif self.difficulty == "Medium":
+            func = sp.sin(x) + sp.cos(x)
+        else:
+            func = sp.exp(x) * sp.log(x)
+        derivative = sp.diff(func, x)
+        problem = f"Find the derivative of f(x) = {sp.latex(func)}"
+        return problem, derivative
+
+    def generate_word_problem(self):
+        if self.difficulty == "Easy":
+            a, b = random.randint(1, 10), random.randint(1, 10)
+            problem = f"A farmer has {a} apples and buys {b} more. How many apples total?"
+            return problem, a + b
+        elif self.difficulty == "Medium":
+            speed, time_ = random.randint(10, 50), random.randint(1, 10)
+            problem = f"A car travels {speed} mph. How far in {time_} hours?"
+            return problem, speed * time_
+        else:
+            dist, time_ = random.randint(50, 200), random.randint(1, 5)
+            problem = f"A train travels {dist} miles in {time_} hours. What is its speed?"
+            return problem, dist / time_
+
+    def solve_problem(self, num1, num2, operation):
+        if operation == "+":
+            return num1 + num2
+        elif operation == "-":
+            return num1 - num2
+        elif operation == "*":
+            return num1 * num2
+        elif operation == "/":
+            if num2 == 0:
+                raise ValueError("Division by zero is not allowed")
+            return num1 / num2
+
+    def explain_problem(self, problem, solution):
+        if "Solve for x" in problem:
+            return f"Isolate x to find the solution: x = {solution}."
+        if "area of a circle" in problem:
+            return f"Use area = πr². Area = {solution}."
+        if "hypotenuse" in problem:
+            return f"Use a²+b²=c². Hypotenuse = {solution}."
+        if "volume of a rectangular prism" in problem:
+            return f"Volume = length × width × height = {solution}."
+        if "derivative" in problem:
+            return f"Apply differentiation rules. Derivative = {solution}."
+        return f"The solution is {solution}."
+
+    def get_random_numbers(self, difficulty, range_start=1, range_end=10):
+        if difficulty == "Easy":
+            return random.randint(range_start, range_end), random.randint(range_start, range_end)
+        elif difficulty == "Medium":
+            return random.randint(range_start, range_end * 2), random.randint(range_start, range_end * 2)
+        else:
+            return random.randint(range_start, range_end * 5), random.randint(range_start, range_end * 5)
+
+    def make_divisible(self, num1, extended_range=False):
+        if num1 == 0:
+            return 1
+        divisors = [i for i in range(1, (20 if extended_range else 10)+1) if num1 % i == 0]
+        return random.choice(divisors) if divisors else 1
+
+    def track_progress(self, correct):
+        self.total_questions += 1
+        if correct:
+            self.correct_answers += 1
+
+    def provide_hint(self, topic):
+        """Provide a hint for the given topic."""
+        hints = {
+            "algebra": "Try isolating the variable on one side of the equation.",
+            "geometry": "Remember the formulas for area, volume, and the Pythagorean theorem.",
+            "calculus": "Think about the rules for differentiation.",
+            "word": "Break the problem into smaller parts and identify key information."
+        }
+        return hints.get(topic, "No hints available for this topic.")
+
+    def get_progress_report(self):
+        acc = (self.correct_answers / self.total_questions) * 100 if self.total_questions else 0
+        return f"Progress: {self.correct_answers}/{self.total_questions} correct ({acc:.2f}% accuracy)"
+
+
+class User:
+    def __init__(self, username, grade_level=0, difficulty="Easy", language="en", correct_answers=0, total_questions=0):
+        self.username = username
+        self.grade_level = grade_level
+        self.difficulty = difficulty
+        self.language = language
+        self.correct_answers = correct_answers
+        self.total_questions = total_questions
+
+
+class UserDataAccess:
+    def __init__(self, db_file="users.json"):  # Or use a database
+        self.db_file = db_file
+        self.users = self.load_users()
+
+    def load_users(self):
+        if os.path.exists(self.db_file):
+            with open(self.db_file, "r") as f:
+                return json.load(f)
+        return {}
+
+    def save_users(self):
+        with open(self.db_file, "w") as f:
+            json.dump(self.users, f)
+
+    def create_user(self, username, password, grade_level=0, difficulty="Easy", language="en"):
+        if username in self.users:
+            raise ValueError("Username already exists")
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode()
+        self.users[username] = {
+            "hashed_password": hashed_password,
+            "grade_level": grade_level,
+            "difficulty": difficulty,
+            "language": language,
+            "correct_answers": 0,
+            "total_questions": 0
+        }
+        self.save_users()
+
+    def get_user(self, username):
+        if username in self.users:
+            return self.users[username]
+        return None
+
+    def update_user(self, username, data):
+        if username in self.users:
+            self.users[username].update(data)
+            self.save_users()
+        else:
+            raise ValueError("User not found")
+
+    def verify_password(self, username, password):
+        user_data = self.get_user(username)
+        if user_data:
+            return bcrypt.checkpw(password.encode('utf-8'), user_data["hashed_password"].encode('utf-8'))
+        return False
+
+
+class MathTutorGUI:  # Renamed from MathTutor for clarity
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Math Tutor AI")
+        self.user_data_access = UserDataAccess()
+        self.current_user = None  # No user logged in initially
+        self.create_main_menu()
+
+    def create_main_menu(self):
+        # Clear existing widgets
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        main_menu_frame = ttk.Frame(self.root)
+        main_menu_frame.pack(pady=20)
+
+        ttk.Label(main_menu_frame, text="Welcome to Math Tutor AI", font=("Arial", 16)).pack(pady=10)
+        ttk.Button(main_menu_frame, text="Login", command=self.show_login).pack(pady=5)
+        ttk.Button(main_menu_frame, text="Register", command=self.show_register).pack(pady=5)
+
+    def show_login(self):
+        # Clear existing widgets
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        login_frame = ttk.Frame(self.root)
+        login_frame.pack(pady=20)
+
+        ttk.Label(login_frame, text="Login", font=("Arial", 14)).pack(pady=10)
+        ttk.Label(login_frame, text="Username:").pack()
+        username_entry = ttk.Entry(login_frame)
+        username_entry.pack()
+        ttk.Label(login_frame, text="Password:").pack()
+        password_entry = ttk.Entry(login_frame, show="*")  # Hide password
+        password_entry.pack()
+
+        def do_login():
+            username = username_entry.get()
+            password = password_entry.get()
+            if self.user_data_access.verify_password(username, password):
+                user_data = self.user_data_access.get_user(username)
+                self.current_user = User(username=username, **user_data)
+                self.show_tutoring_interface()
+            else:
+                messagebox.showerror("Login Failed", "Invalid username or password")
+
+        ttk.Button(login_frame, text="Login", command=do_login).pack(pady=10)
+        ttk.Button(login_frame, text="Back to Main Menu", command=self.create_main_menu).pack(pady=5)
+
+    def show_register(self):
+        # Clear existing widgets
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        register_frame = ttk.Frame(self.root)
+        register_frame.pack(pady=20)
+
+        ttk.Label(register_frame, text="Register", font=("Arial", 14)).pack(pady=10)
+        ttk.Label(register_frame, text="Username:").pack()
+        username_entry = ttk.Entry(register_frame)
+        username_entry.pack()
+        ttk.Label(register_frame, text="Password:").pack()
+        password_entry = ttk.Entry(register_frame, show="*")
+        password_entry.pack()
+
+        def do_register():
+            username = username_entry.get()
+            password = password_entry.get()
+            try:
+                self.user_data_access.create_user(username, password)
+                messagebox.showinfo("Registration Successful", "Please log in.")
+                self.show_login()
+            except ValueError as e:
+                messagebox.showerror("Registration Failed", str(e))
+
+        ttk.Button(register_frame, text="Register", command=do_register).pack(pady=10)
+        ttk.Button(register_frame, text="Back to Main Menu", command=self.create_main_menu).pack(pady=5)
+
+    def show_tutoring_interface(self):
+        # Clear existing widgets
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        if not self.current_user:
+            self.create_main_menu()  # Go back if no user
+            return
+
+        tutoring_frame = ttk.Frame(self.root)
+        tutoring_frame.pack(padx=10, pady=10, fill="both", expand=True)
+
+        # Initialize MathTutor with the current user
+        self.math_tutor = MathTutor(tutoring_frame, self.current_user, self.user_data_access)
+        # Add a logout button
+        logout_button = ttk.Button(tutoring_frame, text="Logout", command=self.logout)
+        logout_button.pack(pady=10)
+
+    def logout(self):
+        self.current_user = None
+        self.create_main_menu()
+
+
+class MathTutor:
+    def __init__(self, root, user, user_data_access):
+        self.root = root
+        self.user = user
+        self.user_data_access = user_data_access
+        self.tutor_ai = MathTutorAI()
+        self.tutor_ai.grade_level = self.user.grade_level
+        self.tutor_ai.difficulty = self.user.difficulty
+        self.tutor_ai.language = self.user.language
