@@ -1,4 +1,4 @@
-- 👋 Hi, I’m @ZoeDaBear
+- 👋 Hi, I’m Evan Higdon
 - 👀 I’m interested in ... A lot of things
 - 🌱 I’m currently learning ... Python Coding and Business Information Systems
 - 💞️ I’m looking to collaborate on ... Anything to get more practical experience in coding
