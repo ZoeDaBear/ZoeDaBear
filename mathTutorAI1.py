@@ -183,6 +183,16 @@ class MathTutorAI:
         if correct:
             self.correct_answers += 1
 
+    def provide_hint(self, topic):
+        """Provide a hint for the given topic."""
+        hints = {
+            "algebra": "Try isolating the variable on one side of the equation.",
+            "geometry": "Remember the formulas for area, volume, and the Pythagorean theorem.",
+            "calculus": "Think about the rules for differentiation.",
+            "word": "Break the problem into smaller parts and identify key information."
+        }
+        return hints.get(topic, "No hints available for this topic.")
+
     def get_progress_report(self):
         acc = (self.correct_answers / self.total_questions) * 100 if self.total_questions else 0
         return f"Progress: {self.correct_answers}/{self.total_questions} correct ({acc:.2f}% accuracy)"
@@ -240,8 +250,29 @@ class MathTutor:
         self.progress_var.set(self.tutor_ai.get_progress_report())
         self.feedback_var.set("Progress reset! 🔄")
 
+    def toggle_dark_mode(self):
+        """Toggle dark mode for the app."""
+        dark_bg = "#2e2e2e"
+        dark_fg = "#ffffff"
+        light_bg = "#f0f0f0"
+        light_fg = "#000000"
+
+       if self.root.cget("background") == light_bg or self.root.cget("background") == "SystemButtonFace":
+            self.root.configure(background=dark_bg)
+            for widget in self.root.winfo_children():
+                widget.configure(style="Dark.TLabel")
+        else:
+            self.root.configure(background=light_bg)
+            for widget in self.root.winfo_children():
+                widget.configure(style="TLabel")
+
     def create_widgets(self):
         """Create all GUI widgets."""
+
+        # Then add a button to trigger it:
+        dark_mode_button = ttk.Button(settings_frame, text="Toggle Dark Mode", command=self.toggle_dark_mode)
+        dark_mode_button.grid(row=4, column=0, columnspan=2, pady=5)
+
 
         # --- Settings Frame ---
         settings_frame = ttk.LabelFrame(self.root, text="Settings")
@@ -390,8 +421,13 @@ class MathTutor:
 
     def provide_hint(self):
         """Provide a hint for the current problem."""
-        # Placeholder implementation for providing hints
-        return "Hints are not yet implemented for this problem type."
+        hints = {
+            "algebra": "Try isolating the variable on one side of the equation.",
+            "geometry": "Remember the formulas for area, volume, and the Pythagorean theorem.",
+            "calculus": "Think about the rules for differentiation.",
+            "word": "Break the problem into smaller parts and identify key information."
+        }
+        return hints.get(topic, "No hints available for this topic.")
 
     def update_timer(self):
         """Update the timer display."""
