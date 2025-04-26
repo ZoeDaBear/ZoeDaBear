@@ -166,11 +166,11 @@ class MathTutorAI:
 
     def get_random_numbers(self, difficulty, range_start=1, range_end=10):
         if difficulty == "Easy":
-            return random.randint(1, 10), random.randint(1, 10)
+            return random.randint(range_start, range_end), random.randint(range_start, range_end)
         elif difficulty == "Medium":
-            return random.randint(range_start, 20), random.randint(range_start, 20)
+            return random.randint(range_start, range_end * 2), random.randint(range_start, range_end * 2)
         else:
-            return random.randint(range_start, 50), random.randint(range_start, 50)
+            return random.randint(range_start, range_end * 5), random.randint(range_start, range_end * 5)
 
     def make_divisible(self, num1, extended_range=False):
         if num1 == 0:
@@ -257,26 +257,25 @@ class MathTutor:
         light_bg = "#f0f0f0"
         light_fg = "#000000"
 
-       if self.root.cget("background") == light_bg or self.root.cget("background") == "SystemButtonFace":
-            self.root.configure(background=dark_bg)
-            for widget in self.root.winfo_children():
-                widget.configure(style="Dark.TLabel")
-        else:
-            self.root.configure(background=light_bg)
-            for widget in self.root.winfo_children():
-                widget.configure(style="TLabel")
+    if self.root.cget("background") == light_bg or self.root.cget("background") == "SystemButtonFace":
+        self.root.configure(background=dark_bg)
+        for widget in self.root.winfo_children():
+            widget.configure(style="Dark.TLabel")
+    else:
+        self.root.configure(background=light_bg)
+        for widget in self.root.winfo_children():
+            widget.configure(style="TLabel")
 
     def create_widgets(self):
         """Create all GUI widgets."""
 
+    # --- Settings Frame ---
+        settings_frame = ttk.LabelFrame(self.root, text="Settings")
+        settings_frame.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
+
         # Then add a button to trigger it:
         dark_mode_button = ttk.Button(settings_frame, text="Toggle Dark Mode", command=self.toggle_dark_mode)
         dark_mode_button.grid(row=4, column=0, columnspan=2, pady=5)
-
-
-        # --- Settings Frame ---
-        settings_frame = ttk.LabelFrame(self.root, text="Settings")
-        settings_frame.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
 
         # Grade Level
         ttk.Label(settings_frame, text="Grade Level:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
@@ -435,3 +434,9 @@ class MathTutor:
             elapsed = int(time.time() - self.start_time)
             self.timer_var.set(f"Time: {elapsed} seconds")
             self.root.after(1000, self.update_timer)
+
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = MathTutor(root)
+    root.mainloop()
