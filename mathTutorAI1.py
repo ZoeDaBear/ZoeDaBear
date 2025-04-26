@@ -237,24 +237,6 @@ class MathTutor:
 
         self.create_widgets()
 
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = MathTutor(root)
-    root.mainloop()
-    local_root = "some value"  # Use a different name to avoid conflict):
-        self.root = root
-        self.root.title("Math Tutor AI")
-        self.tutor_ai = MathTutorAI()
-        self.tutor_ai.load_progress()
-
-        self.problem = ""
-        self.solution = None
-
-        self.timer_running = False
-        self.start_time = None
-
-        self.create_widgets()
-
     def save_progress(self):
         """Manually save progress."""
         self.tutor_ai.save_progress()
@@ -275,14 +257,14 @@ if __name__ == "__main__":
         light_bg = "#f0f0f0"
         light_fg = "#000000"
 
-    if self.root.cget("background") == light_bg or self.root.cget("background") == "SystemButtonFace":
-        self.root.configure(background=dark_bg)
-        for widget in self.root.winfo_children():
-            widget.configure(style="Dark.TLabel")
-    else:
-        self.root.configure(background=light_bg)
-        for widget in self.root.winfo_children():
-            widget.configure(style="TLabel")
+        if self.root.cget("background") == light_bg or self.root.cget("background") == "SystemButtonFace":
+            self.root.configure(background=dark_bg)
+            for widget in self.root.winfo_children():
+                widget.configure(style="Dark.TLabel")
+        else:
+            self.root.configure(background=light_bg)
+            for widget in self.root.winfo_children():
+                widget.configure(style="TLabel")
 
     def create_widgets(self):
         """Create all GUI widgets."""
