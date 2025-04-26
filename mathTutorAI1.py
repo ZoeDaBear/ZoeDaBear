@@ -237,6 +237,24 @@ class MathTutor:
 
         self.create_widgets()
 
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = MathTutor(root)
+    root.mainloop()
+    local_root = "some value"  # Use a different name to avoid conflict):
+        self.root = root
+        self.root.title("Math Tutor AI")
+        self.tutor_ai = MathTutorAI()
+        self.tutor_ai.load_progress()
+
+        self.problem = ""
+        self.solution = None
+
+        self.timer_running = False
+        self.start_time = None
+
+        self.create_widgets()
+
     def save_progress(self):
         """Manually save progress."""
         self.tutor_ai.save_progress()
