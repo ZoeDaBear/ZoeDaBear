@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Tutor AI</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-image: url('https://example.com/math-background.jpg'); /* Replace with a math-themed image URL */
+            background-size: cover;
+            background-position: center;
+            color: #fff; /* Ensure text is readable on the background */
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: rgba(0, 0, 0, 0.8); /* Add a semi-transparent background for readability */
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        select, input, button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 5px;
+        }
+        .problem {
+            font-size: 1.2em;
+            margin: 20px 0;
+        }
+        .feedback {
+            font-weight: bold;
+            color: #4caf50;
+        }
+        .error {
+            color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" style="color: #4caf50; text-decoration: none; font-weight: bold;">&larr; Back to Home</a>
+        <h1>Math Tutor AI</h1>
+        <div class="form-group">
+            <label for="gradeLevel">Grade Level:</label>
+            <select id="gradeLevel">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+                <option value="11">11</option>
+                <option value="12">12</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="difficulty">Difficulty:</label>
+            <select id="difficulty">
+                <option value="Easy">Easy</option>
+                <option value="Medium">Medium</option>
+                <option value="Hard">Hard</option>
+            </select>
+        </div>
+        <button id="generateProblem" aria-label="Generate a new math problem">Generate Problem</button>
+        <div class="problem" id="problem"></div>
+        <div class="form-group">
+            <label for="answer">Your Answer:</label>
+            <input type="number" id="answer" placeholder="Enter your answer">
+        </div>
+        <button id="submitAnswer" aria-label="Submit your answer">Submit Answer</button>
+        <div class="feedback" id="feedback"></div>
+        <div class="progress" id="progress"></div>
+    </div>
+    <script>
+        class MathTutorAI {
+            constructor() {
+                this.gradeLevel = 1;
+                this.difficulty = 'Easy';
+                this.correctAnswers = 0;
+                this.totalQuestions = 0;
+            }
+
+            setGradeLevel(gradeLevel) {
+                this.gradeLevel = gradeLevel;
+            }
+
+            setDifficulty(difficulty) {
+                this.difficulty = difficulty;
+            }
+
+            generateProblem() {
+                const gradeLevel = this.gradeLevel;
+                const difficulty = this.difficulty;
+
+                const getRandomNumber = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+                const generateArithmeticProblem = () => {
+                    const ranges = {
+                        Easy: [1, 10],
+                        Medium: [10, 50],
+                        Hard: [50, 100]
+                    };
+                    const [num1, num2] = [getRandomNumber(...ranges[difficulty]), getRandomNumber(...ranges[difficulty])];
+                    const operations = {
+                        '+': () => [`${num1} + ${num2}`, num1 + num2, `Hint: Add ${num1} and ${num2}.`],
+                        '-': () => [`${num1} - ${num2}`, num1 - num2, `Hint: Subtract ${num2} from ${num1}.`],
+                        '*': () => [`${num1} * ${num2}`, num1 * num2, `Hint: Multiply ${num1} by ${num2}.`],
+                        '/': () => {
+                            const safeNum2 = num2 || 1; // Avoid division by zero
+                            return [`${num1} / ${safeNum2}`, num1 / safeNum2, `Hint: Divide ${num1} by ${safeNum2}.`];
+                        }
+                    };
+                    const operation = Object.keys(operations)[getRandomNumber(0, 3)];
+                    return operations[operation]();
+                };
+
+                const generateStatisticalProblem = () => {
+                    const dataSet = Array.from({ length: 5 }, () => getRandomNumber(1, 20));
+                    const mean = dataSet.reduce((a, b) => a + b, 0) / dataSet.length;
+                    const sortedData = [...dataSet].sort((a, b) => a - b);
+                    const median = sortedData[Math.floor(sortedData.length / 2)];
+                    const mode = sortedData.sort((a, b) =>
+                        sortedData.filter(v => v === a).length - sortedData.filter(v => v === b).length
+                    ).pop();
+                    const statsProblems = {
+                        mean: [`Find the mean of the dataset: ${dataSet.join(', ')}`, mean, `Hint: Add all numbers and divide by ${dataSet.length}.`],
+                        median: [`Find the median of the dataset: ${dataSet.join(', ')}`, median, `Hint: Arrange the numbers in order and find the middle value.`],
+                        mode: [`Find the mode of the dataset: ${dataSet.join(', ')}`, mode, `Hint: Find the number that appears most frequently.`]
+                    };
+                    const type = Object.keys(statsProblems)[getRandomNumber(0, 2)];
+                    return statsProblems[type];
+                };
+
+                const generateWordProblem = () => {
+                    const apples = getRandomNumber(1, 10);
+                    const friends = getRandomNumber(1, 5);
+                    return [
+                        `If you have ${apples} apples and share them equally among ${friends} friends, how many apples does each friend get?`,
+                        apples / friends,
+                        `Hint: Divide ${apples} by ${friends}.`
+                    ];
+                };
+
+                if (gradeLevel >= 8 && Math.random() > 0.5) {
+                    return generateWordProblem();
+                } else if (gradeLevel >= 6) {
+                    return generateStatisticalProblem();
+                } else {
+                    return generateArithmeticProblem();
+                }
+            }
+
+            trackProgress(isCorrect) {
+                this.totalQuestions++;
+                if (isCorrect) {
+                    this.correctAnswers++;
+                }
+            }
+
+            getProgressReport() {
+                return `Progress: ${this.correctAnswers}/${this.totalQuestions} correct.`;
+            }
+        }
+
+        const tutorAI = new MathTutorAI();
+        const gradeLevelSelect = document.getElementById('gradeLevel');
+        const difficultySelect = document.getElementById('difficulty');
+        const generateProblemButton = document.getElementById('generateProblem');
+        const problemDiv = document.getElementById('problem');
+        const answerInput = document.getElementById('answer');
+        const submitAnswerButton = document.getElementById('submitAnswer');
+        const feedbackDiv = document.getElementById('feedback');
+        const progressDiv = document.getElementById('progress');
+
+        let currentProblem = null;
+        let currentSolution = null;
+
+        generateProblemButton.addEventListener('click', () => {
+            const gradeLevel = parseInt(gradeLevelSelect.value);
+            const difficulty = difficultySelect.value;
+            tutorAI.setGradeLevel(gradeLevel);
+            tutorAI.setDifficulty(difficulty);
+
+            // Generate the problem, solution, and hint
+            const [problem, solution, hint] = tutorAI.generateProblem();
+            currentProblem = problem; // Assign the generated problem text
+            currentSolution = solution; // Assign the solution for validation
+
+            // Display the problem text and hint in the UI
+            problemDiv.textContent = `Solve: ${currentProblem}`; // Show the math problem
+            feedbackDiv.textContent = ''; // Clear previous feedback
+            answerInput.value = ''; // Clear the input field
+            progressDiv.textContent = `Hint: ${hint}`; // Show the hint to solve the problem
+        });
+
+        submitAnswerButton.addEventListener('click', () => {
+            const userAnswer = parseFloat(answerInput.value);
+
+            if (isNaN(userAnswer)) {
+                feedbackDiv.textContent = 'Please enter a valid number.';
+                feedbackDiv.className = 'feedback error';
+                return;
+            }
+
+            const isCorrect = Math.abs(userAnswer - currentSolution) < 0.01;
+            tutorAI.trackProgress(isCorrect);
+
+            if (isCorrect) {
+                feedbackDiv.textContent = 'Correct! 🎉';
+                feedbackDiv.className = 'feedback';
+            } else {
+                feedbackDiv.textContent = `Incorrect. The correct answer is ${currentSolution}.`;
+                feedbackDiv.className = 'feedback error';
+            }
+
+            progressDiv.textContent = tutorAI.getProgressReport();
+        });
+    </script>
+</body>
+</html>
