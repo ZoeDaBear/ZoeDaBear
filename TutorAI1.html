@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Tutor AI</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-image: url('https://example.com/math-background.jpg'); /* Replace with a math-themed image URL */
+            background-size: cover;
+            background-position: center;
+            color: #fff; /* Ensure text is readable on the background */
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: rgba(0, 0, 0, 0.8); /* Add a semi-transparent background for readability */
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        select, input, button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 5px;
+        }
+        .problem {
+            font-size: 1.2em;
+            margin: 20px 0;
+        }
+        .feedback {
+            font-weight: bold;
+            color: #4caf50;
+        }
+        .error {
+            color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" style="color: #4caf50; text-decoration: none; font-weight: bold;">&larr; Back to Home</a>
+        <h1>Math Tutor AI</h1>
+        <div class="form-group">
+            <label for="gradeLevel">Grade Level:</label>
+            <select id="gradeLevel">
+                <option value="" disabled selected>Select a grade</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+                <option value="11">11</option>
+                <option value="12">12</option>
+            </select>
+        </div>
+        <button id="generateProblem" aria-label="Generate a new math problem">Generate Problem</button>
+        <div class="problem" id="problem"></div>
+        <div class="form-group">
+            <label for="answer">Your Answer:</label>
+            <input type="number" id="answer" placeholder="Enter your answer">
+        </div>
+        <button id="submitAnswer" aria-label="Submit your answer">Submit Answer</button>
+        <div class="feedback" id="feedback"></div>
+        <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- Add Reading Tutor Section -->
+    <div class="container">
+        <h2>Reading Tutor AI</h2>
+        <div class="form-group">
+            <label for="readingLevel">Reading Level:</label>
+            <select id="readingLevel">
+                <option value="" disabled selected>Select a reading level</option>
+                <option value="1">Beginner</option>
+                <option value="2">Intermediate</option>
+                <option value="3">Advanced</option>
+            </select>
+        </div>
+        <button id="generateReadingExercise" aria-label="Generate a new reading exercise">Generate Exercise</button>
+        <div class="problem" id="readingExercise"></div>
+        <div class="form-group">
+            <label for="readingAnswer">Your Answer:</label>
+            <input type="text" id="readingAnswer" placeholder="Enter your answer">
+        </div>
+        <button id="submitReadingAnswer" aria-label="Submit your reading answer">Submit Answer</button>
+        <div class="feedback" id="readingFeedback"></div>
+        <div class="progress" id="readingProgress"></div>
+    </div>
+
+    <script>
+        // Define getRandomNumber globally
+        const getRandomNumber = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+        const factorial = (n) => {
+            if (n === 0 || n === 1) return 1;
+            let result = 1;
+            for (let i = n; i > 1; i--) {
+                result *= i;
+            }
+            return result;
+        };
+
+        class MathTutorAI {
+            constructor() {
+                this.gradeLevel = 1;
+                this.correctAnswers = 0;
+                this.totalQuestions = 0;
+            }
+
+            setGradeLevel(gradeLevel) {
+                gradeLevel = Number(gradeLevel); // Ensure gradeLevel is numeric
+                if (gradeLevel >= 1 && gradeLevel <= 12) {
+                    this.gradeLevel = gradeLevel;
+                } else {
+                    throw new Error('Invalid grade level');
+                }
+            }
+
+            generateProblem() {
+                const topics = {
+                    1: () => this.generateGradeProblem(1),
+                    2: () => this.generateGradeProblem(2),
+                    3: () => this.generateGradeProblem(3),
+                    4: () => this.generateGradeProblem(4),
+                    5: () => this.generateGradeProblem(5),
+                    6: () => this.generateGradeProblem(6),
+                    7: () => this.generateGradeProblem(7),
+                    8: () => this.generateGradeProblem(8),
+                    9: () => this.generateGradeProblem(9),
+                    10: () => this.generateGradeProblem(10),
+                    11: () => this.generateGradeProblem(11),
+                    12: () => this.generateGradeProblem(12)
+                };
+
+                const generateProblemForGrade = topics[this.gradeLevel];
+                if (!generateProblemForGrade) {
+                    console.warn(`No topics defined for grade level: ${this.gradeLevel}. Falling back to Grade1.`);
+                    return this.generateGradeProblem(1);
+                }
+                return generateProblemForGrade();
+            }
+
+            generateGradeProblem(gradeLevel) {
+                const problems = {
+                    1: () => {
+                        const topics = [
+                            () => {
+                                const [num1, num2] = [getRandomNumber(1, 20), getRandomNumber(1, 20)];
+                                const operation = Math.random() > 0.5 ? '+' : '-';
+                                const solution = operation === '+' ? num1 + num2 : num1 - num2;
+                                return [`${num1} ${operation} ${num2}`, solution, `Hint: ${operation === '+' ? 'Add' : 'Subtract'} ${num1} and ${num2}.`];
+                            },
+                            () => {
+                                const ones = getRandomNumber(1, 9);
+                                const tens = getRandomNumber(1, 9) * 10;
+                                return [`What is ${tens} + ${ones}?`, tens + ones, `Hint: Add the tens and ones place values.`];
+                            },
+                            () => {
+                                const [num1, num2] = [getRandomNumber(1, 20), getRandomNumber(1, 20)];
+                                const comparison = num1 > num2 ? '>' : num1 < num2 ? '<' : '=';
+                                return [`Compare: ${num1} ? ${num2}`, comparison, `Hint: Use >, <, or = to compare the numbers.`];
+                            }
+                        ];
+                        const topic = topics[getRandomNumber(0, topics.length - 1)];
+                        return topic();
+                    },
+                    2: () => {
+                        const topics = [
+                            () => {
+                                const [num1, num2] = [getRandomNumber(1, 100), getRandomNumber(1, 100)];
+                                const operation = Math.random() > 0.5 ? '+' : '-';
+                                const solution = operation === '+' ? num1 + num2 : num1 - num2;
+                                return [`${num1} ${operation} ${num2}`, solution, `Hint: ${operation === '+' ? 'Add' : 'Subtract'} ${num1} and ${num2}.`];
+                            },
+                            () => {
+                                const hundreds = getRandomNumber(1, 9) * 100;
+                                const tens = getRandomNumber(1, 9) * 10;
+                                const ones = getRandomNumber(1, 9);
+                                return [`What is ${hundreds} + ${tens} + ${ones}?`, hundreds + tens + ones, `Hint: Add the hundreds, tens, and ones place values.`];
+                            },
+                            () => {
+                                const dollars = getRandomNumber(1, 20);
+                                const cents = getRandomNumber(1, 99);
+                                return [`You have $${dollars}.${cents}. How much is it in cents?`, dollars * 100 + cents, `Hint: Multiply dollars by 100 and add cents.`];
+                            },
+                            () => {
+                                const hours = getRandomNumber(1, 12);
+                                const minutes = getRandomNumber(1, 59);
+                                return [`Convert ${hours} hours and ${minutes} minutes to minutes.`, hours * 60 + minutes, `Hint: Multiply hours by 60 and add minutes.`];
+                            },
+                            () => {
+                                const length = getRandomNumber(1, 100);
+                                return [`Measure a line that is ${length} cm long. How many millimeters is it?`, length * 10, `Hint: 1 cm = 10 mm.`];
+                            }
+                        ];
+                        const topic = topics[getRandomNumber(0, topics.length - 1)];
+                        return topic();
+                    },
+                    3: () => {
+                        const topics = [
+                            () => {
+                                const [num1, num2] = [getRandomNumber(1, 100), getRandomNumber(1, 100)];
+                                const operation = Math.random() > 0.5 ? '+' : '-';
+                                const solution = operation === '+' ? num1 + num2 : num1 - num2;
+                                return [`${num1} ${operation} ${num2}`, solution, `Hint: ${operation === '+' ? 'Add' : 'Subtract'} ${num1} and ${num2}.`];
+                            },
+                            () => {
+                                const [num1, num2] = [getRandomNumber(1, 12), getRandomNumber(1, 12)];
+                                const operation = Math.random() > 0.5 ? 'x' : '÷';
+                                const solution = operation === 'x' ? num1 * num2 : num1 / num2;
+                                return [`${num1} ${operation} ${num2}`, solution, `Hint: ${operation === 'x' ? 'Multiply' : 'Divide'} ${num1} and ${num2}.`];
+                            },
+                            () => {
+                                const numerator = getRandomNumber(1, 10);
+                                const denominator = getRandomNumber(1, 10);
+                                return [`What is ${numerator}/${denominator} as a decimal?`, numerator / denominator, `Hint: Divide ${numerator} by ${denominator}.`];
+                            },
+                            () => {
+                                const length = getRandomNumber(1, 20);
+                                const width = getRandomNumber(1, 20);
+                                return [`Find the area of a rectangle with length ${length} and width ${width}.`, length * width, `Hint: Multiply length by width.`];
+                            },
+                            () => {
+                                const length = getRandomNumber(1, 20);
+                                const width = getRandomNumber(1, 20);
+                                return [`Find the perimeter of a rectangle with length ${length} and width ${width}.`, 2 * (length + width), `Hint: Add length and width, then multiply by 2.`];
+                            },
+                            () => {
+                                const apples = getRandomNumber(10, 50);
+                                const friends = getRandomNumber(2, 5);
+                                return [`If you have ${apples} apples and share them equally among ${friends} friends, how many apples does each friend get?`, apples / friends, `Hint: Divide ${apples} by ${friends}.`];
+                            }
+                        ];
+                        const topic = topics[getRandomNumber(0, topics.length - 1)];
+                        return topic();
+                    },
+                    4: () => {
+                        const topics = [
+                            () => {
+                                const [num1, num2] = [getRandomNumber(10, 100), getRandomNumber(10, 100)];
+                                return [`What is ${num1} x ${num2}?`, num1 * num2, `Hint: Multiply ${num1} by ${num2}.`];
+                            },
+                            () => {
+                                const [num1, num2] = [getRandomNumber(100, 1000), getRandomNumber(1, 10)];
+                                return [`What is ${num1} ÷ ${num2}?`, num1 / num2, `Hint: Divide ${num1} by ${num2}.`];
+                            },
+                            () => {
+                                const [num1, num2] = [getRandomNumber(1, 100), getRandomNumber(1, 100)];
+                                const operation = Math.random() > 0.5 ? '+' : '-';
+                                const solution = operation === '+' ? num1 + num2 : num1 - num2;
+                                return [`${num1} ${operation} ${num2}`, solution, `Hint: ${operation === '+' ? 'Add' : 'Subtract'} ${num1} and ${num2}.`];
+                            },
+                            () => {
+                                const numerator = getRandomNumber(1, 10);
+                                const denominator = getRandomNumber(1, 10);
+                                return [`What is ${numerator}/${denominator} as a decimal?`, numerator / denominator, `Hint: Divide ${numerator} by ${denominator}.`];
+                            },
+                            () => {
+                                const angle1 = getRandomNumber(1, 89);
+                                const angle2 = getRandomNumber(1, 89);
+                                return [`A triangle has angles ${angle1}° and ${angle2}°. What is the third angle?`, 180 - (angle1 + angle2), `Hint: The sum of angles in a triangle is 180°.`];
+                            },
+                            () => {
+                                const length = getRandomNumber(1, 20);
+                                const width = getRandomNumber(1, 20);
+                                return [`Find the area of a rectangle with length ${length} and width ${width}.`, length * width, `Hint: Multiply length by width.`];
+                            },
+                            () => {
+                                const length = getRandomNumber(1, 20);
+                                const width = getRandomNumber(1, 20);
+                                return [`Find the perimeter of a rectangle with length ${length} and width ${width}.`, 2 * (length + width), `Hint: Add length and width, then multiply by 2.`];
+                            }
+                        ];
+                        const topic = topics[getRandomNumber(0, topics.length - 1)];
+                        return topic();
+                    },
+                    5: () => {
+                        const topics = [
+                            () => {
+                                const [num1, num2] = [getRandomNumber(10, 100), getRandomNumber(10, 100)];
+                                return [`What is ${num1} x ${num2}?`, num1 * num2, `Hint: Multiply ${num1} by ${num2}.`];
+                            },
+                            () => {
+                                const [num1, num2] = [getRandomNumber(100, 1000), getRandomNumber(1, 10)];
+                                return [`What is ${num1} ÷ ${num2}?`, num1 / num2, `Hint: Divide ${num1} by ${num2}.`];
+                            },
+                            () => {
+                                const [num1, num2] = [getRandomNumber(1, 100), getRandomNumber(1, 100)];
+                                const operation = Math.random() > 0.5 ? '+' : '-';
+                                const solution = operation === '+' ? num1 + num2 : num1 - num2;
+                                return [`${num1} ${operation} ${num2}`, solution, `Hint: ${operation === '+' ? 'Add' : 'Subtract'} ${num1} and ${num2}.`];
+                            },
+                            () => {
+                                const numerator = getRandomNumber(1, 10);
+                                const denominator = getRandomNumber(1, 10);
+                                return [`What is ${numerator}/${denominator} as a decimal?`, numerator / denominator, `Hint: Divide ${numerator} by ${denominator}.`];
+                            },
+                            () => {
+                                const length = getRandomNumber(1, 10);
+                                const width = getRandomNumber(1, 10);
+                                const height = getRandomNumber(1, 10);
+                                return [`Find the volume of a rectangular prism with length ${length}, width ${width}, and height ${height}.`, length * width * height, `Hint: Multiply length, width, and height.`];
+                            },
+                            () => {
+                                const x = getRandomNumber(-10, 10);
+                                return [`Plot the point (${x}, ${x * 2}) on the coordinate plane.`, null, `Hint: Use the x-coordinate and calculate the y-coordinate as 2 times x.`];
+                            },
+                            () => {
+                                const angle1 = getRandomNumber(1, 89);
+                                const angle2 = getRandomNumber(1, 89);
+                                return [`A triangle has angles ${angle1}° and ${angle2}°. What is the third angle?`, 180 - (angle1 + angle2), `Hint: The sum of angles in a triangle is 180°.`];
+                            },
+                            () => {
+                                const [a, b] = [getRandomNumber(1, 10), getRandomNumber(1, 10)];
+                                return [`Solve for x: ${a}x + ${b} = 0`, -b / a, `Hint: Subtract ${b} and divide by ${a}.`];
+                            },
+                            () => {
+                                const [num1, num2] = [getRandomNumber(-50, 50), getRandomNumber(-50, 50)];
+                                return [`What is ${num1} + ${num2}?`, num1 + num2, `Hint: Add ${num1} and ${num2}, considering their signs.`];
+                            },
+                            () => {
+                                const [num1, num2] = [getRandomNumber(-50, 50), getRandomNumber(-50, 50)];
+                                return [`What is ${num1} - ${num2}?`, num1 - num2, `Hint: Subtract ${num2} from ${num1}, considering their signs.`];
+                            }
+                        ];
+                        const topic = topics[getRandomNumber(0, topics.length - 1)];
+                        return topic();
+                    },
+                    6: () => {
+                        const topics = [
+                            () => {
+                                const [num1, num2] = [getRandomNumber(1, 100), getRandomNumber(1, 100)];
+                                const operation = Math.random() > 0.5 ? '+' : '-';
+                                const solution = operation === '+' ? num1 + num2 : num1 - num2;
+                                return [`${num1} ${operation} ${num2}`, solution, `Hint: ${operation === '+' ? 'Add' : 'Subtract'} ${num1} and ${num2}.`];
+                            },
+                            () => {
+                                const [num1, num2] = [getRandomNumber(1, 12), getRandomNumber(1, 12)];
+                                return [`What is ${num1} x ${num2}?`, num1 * num2, `Hint: Multiply ${num1} by ${num2}.`];
+                            },
+                            () => {
+                                const [num1, num2] = [getRandomNumber(100, 1000), getRandomNumber(1, 10)];
+                                return [`What is ${num1} ÷ ${num2}?`, num1 / num2, `Hint: Divide ${num1} by ${num2}.`];
+                            },
+                            () => {
+                                const base = getRandomNumber(2, 10);
+                                const exponent = getRandomNumber(2, 5);
+                                return [`What is ${base}^${exponent}?`, base ** exponent, `Hint: Multiply ${base} by itself ${exponent} times.`];
+                            },
+                            () => {
+                                const [num1, num2] = [getRandomNumber(1, 100), getRandomNumber(1, 100)];
+                                return [`What is the ratio of ${num1} to ${num2}?`, `${num1}:${num2}`, `Hint: Express ${num1} and ${num2} as a ratio.`];
+                            },
+                            () => {
+                                const [num1, num2] = [getRandomNumber(1, 100), getRandomNumber(1, 100)];
+                                return [`What is ${num1}% of ${num2}?`, (num1 / 100) * num2, `Hint: Multiply ${num2} by ${num1}/100.`];
+                            },
+                            () => {
+                                const [num1, num2] = [getRandomNumber(-50, 50), getRandomNumber(-50, 50)];
+                                return [`What is ${num1} + ${num2}?`, num1 + num2, `Hint: Add ${num1} and ${num2}, considering their signs.`];
+                            },
+                            () => {
+                                const [num1, num2] = [getRandomNumber(-50, 50), getRandomNumber(-50, 50)];
+                                return [`What is ${num1} - ${num2}?`, num1 - num2, `Hint: Subtract ${num2} from ${num1}, considering their signs.`];
+                            },
+                            () => {
+                                const x = getRandomNumber(1, 10);
+                                return [`Solve for x: 3x - 7 = ${3 * x - 7}`, x, `Hint: Add 7 and divide by 3.`];
+                            },
+                            () => {
+                                const dataSet = Array.from({ length: 5 }, () => getRandomNumber(1, 20));
+                                const mean = dataSet.reduce((a, b) => a + b, 0) / dataSet.length;
+                                return [`Find the mean of the dataset: ${dataSet.join(', ')}`, mean, `Hint: Add all numbers and divide by ${dataSet.length}.`];
+                            }
+                        ];
+                        const topic = topics[getRandomNumber(0, topics.length - 1)];
+                        return topic();
+                    },
+                    7: () => {
+                        const topics = [
+                            () => {
+                                const [num1, num2] = [getRandomNumber(-50, 50), getRandomNumber(-50, 50)];
+                                const operation = Math.random() > 0.5 ? '+' : '-';
+                                const solution = operation === '+' ? num1 + num2 : num1 - num2;
+                                return [`${num1} ${operation} ${num2}`, solution, `Hint: ${operation === '+' ? 'Add' : 'Subtract'} ${num1} and ${num2}, considering their signs.`];
+                            },
+                            () => {
+                                const [num1, num2] = [getRandomNumber(1, 12), getRandomNumber(1, 12)];
+                                return [`What is ${num1} x ${num2}?`, num1 * num2, `Hint: Multiply ${num1} by ${num2}.`];
+                            },
+                            () => {
+                                const [num1, num2] = [getRandomNumber(1, 100), getRandomNumber(1, 100)];
+                                return [`What is the ratio of ${num1} to ${num2}?`, `${num1}:${num2}`, `Hint: Express ${num1} and ${num2} as a ratio.`];
+                            },
+                            () => {
+                                const radius = getRandomNumber(1, 10);
+                                return [`Find the surface area of a sphere with radius ${radius}.`, 4 * Math.PI * radius ** 2, `Hint: Use the formula 4πr².`];
+                            },
+                            () => {
+                                const length = getRandomNumber(1, 10);
+                                const width = getRandomNumber(1, 10);
+                                const height = getRandomNumber(1, 10);
+                                return [`Find the volume of a rectangular prism with length ${length}, width ${width}, and height ${height}.`, length * width * height, `Hint: Multiply length, width, and height.`];
+                            },
+                            () => {
+                                const dataSet = Array.from({ length: 5 }, () => getRandomNumber(1, 20));
+                                const mean = dataSet.reduce((a, b) => a + b, 0) / dataSet.length;
+                                return [`Find the mean of the dataset: ${dataSet.join(', ')}`, mean, `Hint: Add all numbers and divide by ${dataSet.length}.`];
+                            },
+                            () => {
+                                const dataSet = Array.from({ length: 5 }, () => getRandomNumber(1, 20));
+                                const sorted = [...dataSet].sort((a, b) => a - b);
+                                const median = sorted.length % 2 === 0
+                                    ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
+                                    : sorted[Math.floor(sorted.length / 2)];
+                                return [`Find the median of the dataset: ${dataSet.join(', ')}`, median, `Hint: Sort the numbers and find the middle value.`];
+                            }
+                        ];
+                        const topic = topics[getRandomNumber(0, topics.length - 1)];
+                        return topic();
+                    },
+                    8: () => {
+                        const topics = [
+                            () => {
+                                const [a, b] = [getRandomNumber(1, 10), getRandomNumber(1, 10)];
+                                return [`Solve for x: ${a}x + ${b} = 0`, -b / a, `Hint: Subtract ${b} and divide by ${a}.`];
+                            },
+                            () => {
+                                const x = getRandomNumber(1, 10);
+                                return [`Evaluate the function f(x) = 2x + 3 at x = ${x}.`, 2 * x + 3, `Hint: Substitute ${x} into the function.`];
+                            },
+                            () => {
+                                const base = getRandomNumber(2, 10);
+                                const exponent = getRandomNumber(2, 5);
+                                return [`What is ${base}^${exponent}?`, base ** exponent, `Hint: Multiply ${base} by itself ${exponent} times.`];
+                            },
+                            () => {
+                                const radicand = getRandomNumber(1, 100);
+                                return [`What is the square root of ${radicand}?`, Math.sqrt(radicand), `Hint: Find the number that, when squared, equals ${radicand}.`];
+                            },
+                            () => {
+                                const [a, b] = [getRandomNumber(1, 20), getRandomNumber(1, 20)];
+                                return [`A right triangle has legs of length ${a} and ${b}. What is the length of the hypotenuse?`, Math.sqrt(a ** 2 + b ** 2), `Hint: Use the Pythagorean theorem: a² + b² = c².`];
+                            },
+                            () => {
+                                const [x, y] = [getRandomNumber(1, 10), getRandomNumber(1, 10)];
+                                return [`Translate the point (${x}, ${y}) by (3, -2). What is the new point?`, `(${x + 3}, ${y - 2})`, `Hint: Add 3 to the x-coordinate and subtract 2 from the y-coordinate.`];
+                            },
+                            () => {
+                                const [x, y] = [getRandomNumber(1, 10), getRandomNumber(1, 10)];
+                                return [`Reflect the point (${x}, ${y}) over the x-axis. What is the new point?`, `(${x}, ${-y})`, `Hint: Negate the y-coordinate.`];
+                            }
+                        ];
+                        const topic = topics[getRandomNumber(0, topics.length - 1)];
+                        return topic();
+                    },
+                    9: () => {
+                        const topics = [
+                            () => {
+                                const [a, b] = [getRandomNumber(1, 10), getRandomNumber(1, 10)];
+                                return [`Solve for x: ${a}x + ${b} = 0`, -b / a, `Hint: Subtract ${b} and divide by ${a}.`];
+                            },
+                            () => {
+                                const [a, b, c] = [getRandomNumber(1, 10), getRandomNumber(1, 10), getRandomNumber(1, 10)];
+                                return [`Solve the quadratic equation: ${a}x² + ${b}x + ${c} = 0`, null, `Hint: Use the quadratic formula: x = (-b ± √(b² - 4ac)) / 2a.`];
+                            },
+                            () => {
+                                const [m, b] = [getRandomNumber(1, 10), getRandomNumber(-10, 10)];
+                                const x = getRandomNumber(-10, 10);
+                                return [`Evaluate the linear function f(x) = ${m}x + ${b} at x = ${x}.`, m * x + b, `Hint: Substitute ${x} into the function.`];
+                            },
+                            () => {
+                                const [a1, b1, c1] = [getRandomNumber(1, 10), getRandomNumber(1, 10), getRandomNumber(1, 20)];
+                                const [a2, b2, c2] = [getRandomNumber(1, 10), getRandomNumber(1, 10), getRandomNumber(1, 20)];
+                                return [
+                                    `Solve the system of equations:\n1) ${a1}x + ${b1}y = ${c1}\n2) ${a2}x + ${b2}y = ${c2}`,
+                                    null,
+                                    `Hint: Use substitution or elimination to solve for x and y.`
+                                ];
+                            },
+                            () => {
+                                const [a, b] = [getRandomNumber(1, 10), getRandomNumber(1, 10)];
+                                return [`Graph the inequality: ${a}x + ${b}y ≤ ${getRandomNumber(1, 20)}`, null, `Hint: Shade the region that satisfies the inequality.`];
+                            },
+                            () => {
+                                const base = getRandomNumber(2, 10);
+                                const exponent = getRandomNumber(2, 5);
+                                return [`What is ${base}^${exponent}?`, base ** exponent, `Hint: Multiply ${base} by itself ${exponent} times.`];
+                            }
+                        ];
+                        const topic = topics[getRandomNumber(0, topics.length - 1)];
+                        return topic();
+                    },
+                    10: () => {
+                        const topics = [
+                            () => {
+                                const [a, b, c] = [getRandomNumber(1, 10), getRandomNumber(1, 10), getRandomNumber(1, 10)];
+                                return [`Prove whether a triangle with sides ${a}, ${b}, and ${c} is a right triangle.`, null, `Hint: Use the Pythagorean theorem: a² + b² = c².`];
+                            },
+                            () => {
+                                const [base, height] = [getRandomNumber(1, 20), getRandomNumber(1, 20)];
+                                return [`Find the area of a triangle with base ${base} and height ${height}.`, 0.5 * base * height, `Hint: Use the formula: Area = 0.5 × base × height.`];
+                            },
+                            () => {
+                                const radius = getRandomNumber(1, 10);
+                                return [`Find the circumference of a circle with radius ${radius}.`, 2 * Math.PI * radius, `Hint: Use the formula: Circumference = 2πr.`];
+                            },
+                            () => {
+                                const [x1, y1, x2, y2] = [getRandomNumber(-10, 10), getRandomNumber(-10, 10), getRandomNumber(-10, 10), getRandomNumber(-10, 10)];
+                                return [`Find the distance between the points (${x1}, ${y1}) and (${x2}, ${y2}).`, Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2), `Hint: Use the distance formula: √((x₂ - x₁)² + (y₁ - y₁)²).`];
+                            },
+                            () => {
+                                const [x1, y1, x2, y2] = [getRandomNumber(-10, 10), getRandomNumber(-10, 10), getRandomNumber(-10, 10), getRandomNumber(-10, 10)];
+                                return [`Find the midpoint of the line segment joining (${x1}, ${y1}) and (${x2}, ${y2}).`, `(${(x1 + x2) / 2}, ${(y1 + y2) / 2})`, `Hint: Use the midpoint formula: ((x₁ + x₂)/2, (y₁ + y₂)/2).`];
+                            },
+                            () => {
+                                const angle = getRandomNumber(1, 89);
+                                const hypotenuse = getRandomNumber(10, 20);
+                                return [`Find the length of the side opposite to a ${angle}° angle in a right triangle with hypotenuse ${hypotenuse}.`, hypotenuse * Math.sin((angle * Math.PI) / 180), `Hint: Use the sine function: sin(angle) = opposite/hypotenuse.`];
+                            }
+                        ];
+                        const topic = topics[getRandomNumber(0, topics.length - 1)];
+                        return topic();
+                    },
+                    11: () => {
+                        const topics = [
+                            () => {
+                                const base = getRandomNumber(2, 10);
+                                const exponent = getRandomNumber(2, 5);
+                                return [`What is ${base}^${exponent}?`, base ** exponent, `Hint: Multiply ${base} by itself ${exponent} times.`];
+                            },
+                            () => {
+                                const value = getRandomNumber(1, 100);
+                                return [`What is log(${value})?`, Math.log10(value), `Hint: Use the base-10 logarithm.`];
+                            },
+                            () => {
+                                const [a, b, c] = [getRandomNumber(1, 10), getRandomNumber(1, 10), getRandomNumber(1, 10)];
+                                return [`Solve the quadratic equation: ${a}x² + ${b}x + ${c} = 0`, null, `Hint: Use the quadratic formula: x = (-b ± √(b² - 4ac)) / 2a.`];
+                            },
+                            () => {
+                                const [real, imaginary] = [getRandomNumber(-10, 10), getRandomNumber(-10, 10)];
+                                return [`Simplify the complex number (${real} + ${imaginary}i)².`, `${real ** 2 - imaginary ** 2} + ${2 * real * imaginary}i`, `Hint: Use the formula (a + bi)² = a² - b² + 2abi.`];
+                            },
+                            () => {
+                                const [numerator, denominator] = [
+                                    `${getRandomNumber(1, 10)}x + ${getRandomNumber(1, 10)}`,
+                                    `${getRandomNumber(1, 10)}x - ${getRandomNumber(1, 10)}`
+                                ];
+                                return [`Simplify the rational expression (${numerator}) / (${denominator}).`, null, `Hint: Factorize and simplify.`];
+                            },
+                            () => {
+                                const angle = getRandomNumber(1, 89);
+                                return [`Find the value of sin(${angle}°).`, Math.sin((angle * Math.PI) / 180), `Hint: Use a calculator or trigonometric table.`];
+                            },
+                            () => {
+                                const [x1, y1, x2, y2] = [getRandomNumber(-10, 10), getRandomNumber(-10, 10), getRandomNumber(-10, 10), getRandomNumber(-10, 10)];
+                                return [`Find the equation of the line passing through (${x1}, ${y1}) and (${x2}, ${y2}).`, null, `Hint: Use the slope formula m = (y₂ - y₁) / (x₂ - x₁) and point-slope form.`];
+                            },
+                            () => {
+                                const firstTerm = getRandomNumber(1, 10);
+                                const commonDifference = getRandomNumber(1, 10);
+                                const n = getRandomNumber(5, 10);
+                                return [`Find the ${n}th term of the arithmetic sequence with first term ${firstTerm} and common difference ${commonDifference}.`, firstTerm + (n - 1) * commonDifference, `Hint: Use the formula aₙ = a₁ + (n - 1)d.`];
+                            },
+                            () => {
+                                const firstTerm = getRandomNumber(1, 5);
+                                const commonRatio = getRandomNumber(2, 5);
+                                const n = getRandomNumber(4, 8);
+                                return [`Find the sum of the first ${n} terms of the geometric sequence with first term ${firstTerm} and common ratio ${commonRatio}.`, firstTerm * (1 - commonRatio ** n) / (1 - commonRatio), `Hint: Use the formula Sₙ = a₁(1 - rⁿ) / (1 - r).`];
+                            }
+                        ];
+                        const topic = topics[getRandomNumber(0, topics.length - 1)];
+                        return topic();
+                    },
+                    12: () => {
+                        const topics = [
+                            () => {
+                                const x = getRandomNumber(1, 10);
+                                return [`Find the derivative of f(x) = 3x² + 2x + 1 at x = ${x}.`, 6 * x + 2, `Hint: Differentiate f(x) and substitute ${x}.`];
+                            },
+                            () => {
+                                const a = getRandomNumber(1, 5);
+                                const b = getRandomNumber(6, 10);
+                                return [`Evaluate the definite integral of f(x) = x² from ${a} to ${b}.`, (b ** 3) / 3 - (a ** 3) / 3, `Hint: Use the formula ∫x² dx = x³/3 and evaluate at the bounds.`];
+                            },
+                            () => {
+                                const x = getRandomNumber(1, 10);
+                                return [`Find the limit as x approaches ${x} of (x² - ${x ** 2}) / (x - ${x}).`, 2 * x, `Hint: Simplify the expression and evaluate the limit.`];
+                            },
+                            () => {
+                                const [successes, trials] = [getRandomNumber(1, 10), getRandomNumber(11, 20)];
+                                return [`What is the probability of success if there are ${successes} successes out of ${trials} trials?`, successes / trials, `Hint: Probability = successes / trials.`];
+                            },
+                            () => {
+                                const dataSet = Array.from({ length: 5 }, () => getRandomNumber(1, 20));
+                                const mean = dataSet.reduce((a, b) => a + b, 0) / dataSet.length;
+                                return [`Find the mean of the dataset: ${dataSet.join(', ')}`, mean, `Hint: Add all numbers and divide by the count.`];
+                            },
+                            () => {
+                                const dataSet = Array.from({ length: 5 }, () => getRandomNumber(1, 20));
+                                const variance = dataSet.reduce((a, b) => a + (b - (dataSet.reduce((x, y) => x + y, 0) / dataSet.length)) ** 2, 0) / dataSet.length;
+                                return [`Find the variance of the dataset: ${dataSet.join(', ')}`, variance, `Hint: Variance = Σ((x - mean)²) / n.`];
+                            },
+                            () => {
+                                const [n, r] = [getRandomNumber(5, 10), getRandomNumber(1, 4)];
+                                const combination = factorial(n) / (factorial(r) * factorial(n - r));
+                                return [`How many ways can you choose ${r} items from ${n} items?`, combination, `Hint: Use the combination formula C(n, r) = n! / (r!(n - r)!).`];
+                            }
+                        ];
+                        const topic = topics[getRandomNumber(0, topics.length - 1)];
+                        return topic();
+                    }
+                };
+
+                const generateProblemForGrade = problems[gradeLevel];
+                if (!generateProblemForGrade) {
+                    console.warn(`No problems defined for grade level: ${gradeLevel}. Falling back to grade 1.`);
+                    return problems[1]();
+                }
+                return generateProblemForGrade();
+            }
+
+            trackProgress(isCorrect) {
+                this.totalQuestions++;
+                if (isCorrect) {
+                    this.correctAnswers++;
+                }
+            }
+
+            getProgressReport() {
+                return `Progress: ${this.correctAnswers}/${this.totalQuestions} correct.`;
+            }
+        }
+
+        const tutorAI = new MathTutorAI();
+        const gradeLevelSelect = document.getElementById('gradeLevel');
+        const generateProblemButton = document.getElementById('generateProblem');
+        const problemDiv = document.getElementById('problem');
+        const answerInput = document.getElementById('answer');
+        const submitAnswerButton = document.getElementById('submitAnswer');
+        const feedbackDiv = document.getElementById('feedback');
+        const progressDiv = document.getElementById('progress');
+
+        let currentProblem = null;
+        let currentSolution = null;
+
+        generateProblemButton.addEventListener('click', () => {
+            const gradeLevel = parseInt(gradeLevelSelect.value);
+
+            // Validate the selected grade level
+            if (!gradeLevelSelect.value || isNaN(gradeLevel) || gradeLevel < 1 || gradeLevel > 12) {
+                feedbackDiv.textContent = 'Please select a valid grade level.';
+                feedbackDiv.className = 'feedback error';
+                return;
+            }
+
+            try {
+                // Set the grade level in the MathTutorAI instance
+                tutorAI.setGradeLevel(gradeLevel);
+                console.log('TutorAI Grade Level After Set:', tutorAI.gradeLevel);
+
+                // Generate the problem, solution, and hint
+                const [problem, solution, hint] = tutorAI.generateProblem();
+                console.log('Generated Problem:', problem);
+                console.log('Generated Solution:', solution);
+                console.log('Generated Hint:', hint);
+
+                if (!problem || !solution || !hint) {
+                    throw new Error('Problem generation failed.');
+                }
+
+                currentProblem = problem; // Assign the generated problem text
+                currentSolution = solution; // Assign the solution for validation
+
+                // Display the problem text and hint in the UI
+                problemDiv.textContent = `Solve: ${currentProblem}`; // Show the math problem
+                feedbackDiv.textContent = ''; // Clear previous feedback
+                feedbackDiv.className = 'feedback'; // Reset feedback class
+                answerInput.value = ''; // Clear the input field
+                progressDiv.textContent = `Hint: ${hint}`; // Show the hint to solve the problem
+            } catch (error) {
+                // Handle any errors during problem generation
+                feedbackDiv.textContent = 'An error occurred while generating the problem. Please try again.';
+                feedbackDiv.className = 'feedback error';
+                console.error('Error during problem generation:', error); // Log the error for debugging
+            }
+        });
+
+        submitAnswerButton.addEventListener('click', () => {
+            const userAnswer = parseFloat(answerInput.value);
+
+            if (isNaN(userAnswer)) {
+                feedbackDiv.textContent = 'Please enter a valid number.';
+                feedbackDiv.className = 'feedback error';
+                return;
+            }
+
+            const isCorrect = Math.abs(userAnswer - currentSolution) < 0.01;
+            tutorAI.trackProgress(isCorrect);
+
+            if (isCorrect) {
+                feedbackDiv.textContent = 'Correct! 🎉';
+                feedbackDiv.className = 'feedback';
+            } else {
+                feedbackDiv.textContent = `Incorrect. The correct answer is ${currentSolution}.`;
+                feedbackDiv.className = 'feedback error';
+            }
+
+            progressDiv.textContent = tutorAI.getProgressReport();
+        });
+
+        window.onerror = (message, source, lineno, colno, error) => {
+            console.error('Global Error:', message, 'at', source, 'line', lineno, 'column', colno, error);
+        };
+
+        class ReadingTutorAI {
+            constructor() {
+                this.readingLevel = 1;
+                this.correctAnswers = 0;
+                this.totalQuestions = 0;
+            }
+
+            setReadingLevel(level) {
+                level = Number(level);
+                if (level >= 1 && level <= 3) {
+                    this.readingLevel = level;
+                } else {
+                    throw new Error('Invalid reading level');
+                }
+            }
+
+            generateExercise() {
+                const exercises = {
+                    1: () => ["What is the main idea of this sentence: 'The cat sat on the mat.'?", "The cat is sitting on the mat."],
+                    2: () => ["Summarize this paragraph: 'The quick brown fox jumps over the lazy dog.'", "The fox jumps over the dog."],
+                    3: () => ["What is the theme of this story: 'A boy learns the value of honesty after losing his friends.'?", "Honesty is important."]
+                };
+
+                const generateForLevel = exercises[this.readingLevel];
+                if (!generateForLevel) {
+                    throw new Error('No exercises defined for this level.');
+                }
+                return generateForLevel();
+            }
+
+            trackProgress(isCorrect) {
+                this.totalQuestions++;
+                if (isCorrect) {
+                    this.correctAnswers++;
+                }
+            }
+
+            getProgressReport() {
+                return `Progress: ${this.correctAnswers}/${this.totalQuestions} correct.`;
+            }
+        }
+
+        const readingTutorAI = new ReadingTutorAI();
+        const readingLevelSelect = document.getElementById('readingLevel');
+        const generateReadingExerciseButton = document.getElementById('generateReadingExercise');
+        const readingExerciseDiv = document.getElementById('readingExercise');
+        const readingAnswerInput = document.getElementById('readingAnswer');
+        const submitReadingAnswerButton = document.getElementById('submitReadingAnswer');
+        const readingFeedbackDiv = document.getElementById('readingFeedback');
+        const readingProgressDiv = document.getElementById('readingProgress');
+
+        let currentReadingExercise = null;
+        let currentReadingSolution = null;
+
+        generateReadingExerciseButton.addEventListener('click', () => {
+            const readingLevel = parseInt(readingLevelSelect.value);
+
+            if (!readingLevelSelect.value || isNaN(readingLevel) || readingLevel < 1 || readingLevel > 3) {
+                readingFeedbackDiv.textContent = 'Please select a valid reading level.';
+                readingFeedbackDiv.className = 'feedback error';
+                return;
+            }
+
+            try {
+                readingTutorAI.setReadingLevel(readingLevel);
+                const [exercise, solution] = readingTutorAI.generateExercise();
+
+                currentReadingExercise = exercise;
+                currentReadingSolution = solution;
+
+                readingExerciseDiv.textContent = exercise;
+                readingFeedbackDiv.textContent = '';
+                readingFeedbackDiv.className = 'feedback';
+                readingAnswerInput.value = '';
+            } catch (error) {
+                readingFeedbackDiv.textContent = 'An error occurred while generating the exercise. Please try again.';
+                readingFeedbackDiv.className = 'feedback error';
+                console.error('Error during exercise generation:', error);
+            }
+        });
+
+        submitReadingAnswerButton.addEventListener('click', () => {
+            const userAnswer = readingAnswerInput.value.trim().toLowerCase();
+
+            if (!userAnswer) {
+                readingFeedbackDiv.textContent = 'Please enter an answer.';
+                readingFeedbackDiv.className = 'feedback error';
+                return;
+            }
+
+            const isCorrect = userAnswer === currentReadingSolution.toLowerCase();
+            readingTutorAI.trackProgress(isCorrect);
+
+            if (isCorrect) {
+                readingFeedbackDiv.textContent = 'Correct! 🎉';
+                readingFeedbackDiv.className = 'feedback';
+            } else {
+                readingFeedbackDiv.textContent = `Incorrect. The correct answer is: "${currentReadingSolution}".`;
+                readingFeedbackDiv.className = 'feedback error';
+            }
+
+            readingProgressDiv.textContent = readingTutorAI.getProgressReport();
+        });
+    </script>
+</body>
+</html>
