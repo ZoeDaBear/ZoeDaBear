@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reading Tutor AI</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-image: url('ReadingBackground.png'); /* Replace with a reading-themed image URL */
+            background-size: cover;
+            background-position: center;
+            color: #fff; /* Ensure text is readable on the background */
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: rgba(0, 0, 0, 0.8); /* Add a semi-transparent background for readability */
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        select, input, button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 5px;
+        }
+        .problem {
+            font-size: 1.2em;
+            margin: 20px 0;
+            line-height: 1.5;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .feedback {
+            font-weight: bold;
+            color: #4caf50;
+        }
+        .error {
+            color: #f44336;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 10px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .option-button {
+            margin: 5px 0;
+            text-align: left;
+            cursor: pointer;
+        }
+        .option-button:hover {
+            background-color: #555;
+        }
+        .next-button {
+            background-color: #4caf50;
+            color: white;
+            font-weight: bold;
+            margin-top: 15px;
+            display: none;
+        }
+        .next-button:hover {
+            background-color: #388e3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="tutorHomepage.html" style="color: #4caf50; text-decoration: none; font-weight: bold;">&larr; Back to Home</a>
+        <h2>Reading Tutor AI</h2>
+        <div class="form-group">
+            <label for="readingLevel">Reading Level:</label>
+            <select id="readingLevel">
+                <option value="" disabled selected>Select a reading level</option>
+                <option value="1">Beginner</option>
+                <option value="2">Intermediate</option>
+                <option value="3">Advanced</option>
+            </select>
+        </div>
+        <button id="generateReadingExercise" aria-label="Generate a new reading exercise">Generate Exercise</button>
+        <div class="problem" id="readingExercise"></div>
+        <div id="answerContainer" style="display: none;">
+            <div class="form-group" id="textAnswerSection" style="display: none;">
+                <label for="readingAnswer">Your Answer:</label>
+                <input type="text" id="readingAnswer" placeholder="Enter your answer">
+                <button id="submitReadingAnswer" aria-label="Submit your reading answer">Submit Answer</button>
+            </div>
+        </div>
+        <div class="feedback" id="readingFeedback"></div>
+        <div class="progress" id="readingProgress"></div>
+        <button id="nextQuestionButton" class="next-button" style="display: none;">Next Question →</button>
+    </div>
+
+    <script>
+        class ReadingTutorAI {
+            constructor() {
+                this.readingLevel = 1;
+                this.correctAnswers = 0;
+                this.totalQuestions = 0;
+                this.apiKey = "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"; // Replace with your actual API key
+                this.models = [
+                    "google/gemini-1.5-flash-8b-experimental",
+                    "meta-llama/llama-3.1-405b-base",
+                    "meta-llama/llama-3.1-8b-instruct",
+                    "mistralai/mistral-nemo",
+                    "google/gemma-2-9b",
+                    "mistralai/mistral-7b-instruct",
+                    "huggingfaceh4/zephyr-7b"
+                ];
+                this.currentModelIndex = 0;
+            }
+
+            setReadingLevel(level) {
+                level = Number(level);
+                if (level >= 1 && level <= 3) {
+                    this.readingLevel = level;
+                } else {
+                    throw new Error('Invalid reading level');
+                }
+            }
+
+            // Fallback to hardcoded exercises if API fails
+            getFallbackExercise() {
+                const exercises = {
+                    1: () => [
+                        "Timmy has a pet cat. The cat has soft black fur. The cat likes to sleep on the couch. Timmy pets the cat every day.\n\nWhere does Timmy's cat like to sleep?",
+                        ["A. On the floor", "B. On a tree", "C. On the table", "D. On the couch"],
+                        "D. On the couch"
+                    ],
+                    2: () => [
+                        "The boy planted a seed in the garden. He watered it every day and made sure it got plenty of sunlight. After many weeks, he watched as it grew taller and taller. Finally, a bright yellow flower with large petals opened up towards the sun.\n\nWhat did the boy grow in his garden?",
+                        ["A. A tomato plant", "B. A sunflower", "C. A rosebush", "D. An apple tree"],
+                        "B. A sunflower"
+                    ],
+                    3: () => [
+                        "In Harper Lee's 'To Kill a Mockingbird,' Atticus Finch defends Tom Robinson, a Black man falsely accused of a crime he did not commit, despite facing criticism from his community. Through the eyes of his daughter Scout, readers witness the prejudice and injustice prevalent in their Southern town during the 1930s. The novel explores how characters like Atticus and Boo Radley demonstrate moral courage by standing up for what is right, even when facing significant opposition.\n\nWhat is the primary theme of 'To Kill a Mockingbird'?",
+                        ["A. The importance of family bonds", "B. The fight against racial injustice", "C. The value of hard work and persistence", "D. The pursuit of the American Dream"],
+                        "B. The fight against racial injustice"
+                    ]
+                };
+
+                const generateForLevel = exercises[this.readingLevel];
+                if (!generateForLevel) {
+                    throw new Error('No exercises defined for this level.');
+                }
+                return generateForLevel();
+            }
+
+            async generateExercise() {
+                try {
+                    const levelDescriptions = {
+                        1: "beginner (ages 5-7), focusing on phonics, basic vocabulary, simple sentences",
+                        2: "intermediate (ages 8-10), focusing on reading comprehension, paragraph meaning, context clues",
+                        3: "advanced (ages 11-14), focusing on literary analysis, themes, inferences"
+                    };
+
+                    const levelDescription = levelDescriptions[this.readingLevel];
+                    
+                    // Try each model in sequence if needed
+                    let exercise = null;
+                    let attempts = 0;
+                    const maxAttempts = this.models.length;
+                    
+                    while (!exercise && attempts < maxAttempts) {
+                        const currentModel = this.models[this.currentModelIndex];
+                        
+                        try {
+                            exercise = await this.callOpenRouterAPI(currentModel, levelDescription);
+                        } catch (error) {
+                            console.error(`Error with model ${currentModel}:`, error);
+                            this.currentModelIndex = (this.currentModelIndex + 1) % this.models.length;
+                            attempts++;
+                        }
+                    }
+                    
+                    if (!exercise) {
+                        console.warn("All API attempts failed, using fallback exercise");
+                        return this.getFallbackExercise();
+                    }
+                    
+                    return exercise;
+                } catch (error) {
+                    console.error("Error generating exercise:", error);
+                    return this.getFallbackExercise();
+                }
+            }
+
+            async callOpenRouterAPI(model, levelDescription) {
+                const prompt = `Create a reading comprehension exercise for a ${levelDescription} reading level.
+
+Your exercise MUST include a brief reading passage appropriate for the age level, followed by a question about that passage.
+
+Format your response as a JSON object with exactly these fields:
+{
+  "passage": "A short age-appropriate reading passage (2-4 sentences for beginners, longer for higher levels)",
+  "question": "A question that tests comprehension of the passage above",
+  "options": ["A. First option", "B. Second option", "C. Third option", "D. Fourth option"],
+  "correctAnswer": "The full correct answer (including its letter prefix)"
+}
+
+Make sure the question is directly related to the passage, appropriate for the reading level, educational, and has a clear correct answer that can be determined from the passage.`;
+
+                const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${this.apiKey}`,
+                        "HTTP-Referer": window.location.href
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        messages: [
+                            {
+                                role: "user",
+                                content: prompt
+                            }
+                        ],
+                        response_format: { type: "json_object" }
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`API request failed: ${response.status} ${errorText}`);
+                }
+
+                const data = await response.json();
+                if (!data.choices || !data.choices[0] || !data.choices[0].message || !data.choices[0].message.content) {
+                    throw new Error("Invalid API response format");
+                }
+
+                try {
+                    const content = data.choices[0].message.content;
+                    const parsedContent = JSON.parse(content);
+                    
+                    if (!parsedContent.passage || !parsedContent.question || !Array.isArray(parsedContent.options) || !parsedContent.correctAnswer) {
+                        throw new Error("Response missing required fields");
+                    }
+                    
+                    const questionWithPassage = `${parsedContent.passage}\n\n${parsedContent.question}`;
+                    return [questionWithPassage, parsedContent.options, parsedContent.correctAnswer];
+                } catch (e) {
+                    console.error("Failed to parse API response:", e);
+                    throw new Error("Failed to parse exercise data");
+                }
+            }
+
+            trackProgress(isCorrect) {
+                this.totalQuestions++;
+                if (isCorrect) {
+                    this.correctAnswers++;
+                }
+            }
+
+            getProgressReport() {
+                return `Progress: ${this.correctAnswers}/${this.totalQuestions} correct.`;
+            }
+        }
+
+        const readingTutorAI = new ReadingTutorAI();
+        const readingLevelSelect = document.getElementById('readingLevel');
+        const generateReadingExerciseButton = document.getElementById('generateReadingExercise');
+        const readingExerciseDiv = document.getElementById('readingExercise');
+        const readingAnswerInput = document.getElementById('readingAnswer');
+        const submitReadingAnswerButton = document.getElementById('submitReadingAnswer');
+        const readingFeedbackDiv = document.getElementById('readingFeedback');
+        const readingProgressDiv = document.getElementById('readingProgress');
+        const nextQuestionButton = document.getElementById('nextQuestionButton');
+
+        let currentReadingExercise = null;
+        let currentReadingSolution = null;
+        let questionAnswered = false;
+        let currentReadingLevel = 1;
+
+        const answerContainer = document.getElementById('answerContainer');
+        const textAnswerSection = document.getElementById('textAnswerSection');
+
+        // Function to generate reading exercise
+        async function generateExercise(readingLevel) {
+            if (!readingLevel || isNaN(readingLevel) || readingLevel < 1 || readingLevel > 3) {
+                readingFeedbackDiv.textContent = 'Please select a valid reading level.';
+                readingFeedbackDiv.className = 'feedback error';
+                return;
+            }
+            
+            // Hide the next question button while generating
+            nextQuestionButton.style.display = 'none';
+            
+            // Reset question answered state
+            questionAnswered = false;
+            
+            // Store the current reading level
+            currentReadingLevel = readingLevel;
+            
+            try {
+                // Show loading indicator
+                readingExerciseDiv.innerHTML = '<p>Generating exercise...</p><div class="loading"></div>';
+                readingFeedbackDiv.textContent = '';
+                readingFeedbackDiv.className = 'feedback';
+                
+                // Hide answer sections while loading
+                answerContainer.style.display = 'none';
+                textAnswerSection.style.display = 'none';
+                
+                readingTutorAI.setReadingLevel(readingLevel);
+                const [exercise, options, solution] = await readingTutorAI.generateExercise();
+
+                currentReadingExercise = exercise;
+                currentReadingSolution = solution;
+
+                // Convert passage line breaks to HTML paragraph breaks
+                const formattedExercise = exercise.replace(/\n\n/g, '</p><p>');
+                readingExerciseDiv.innerHTML = `<p>${formattedExercise}</p>`;
+                
+                // Clear previous option buttons if any
+                const existingOptionButtons = document.querySelectorAll('.option-button');
+                existingOptionButtons.forEach(button => button.remove());
+                
+                // For multiple choice questions with options
+                if (options && options.length > 0) {
+                    // Show multiple choice buttons, hide text input
+                    textAnswerSection.style.display = 'none';
+                    
+                    options.forEach((option, index) => {
+                        const button = document.createElement('button');
+                        button.textContent = option;
+                        button.className = 'option-button';
+                        button.addEventListener('click', () => {
+                            if (questionAnswered) return; // Prevent multiple answers
+                            
+                            const isCorrect = option === currentReadingSolution;
+                            readingTutorAI.trackProgress(isCorrect);
+                            questionAnswered = true;
+
+                            if (isCorrect) {
+                                readingFeedbackDiv.textContent = 'Correct! 🎉';
+                                readingFeedbackDiv.className = 'feedback';
+                            } else {
+                                readingFeedbackDiv.textContent = `Incorrect. The correct answer is: "${currentReadingSolution}".`;
+                                readingFeedbackDiv.className = 'feedback error';
+                            }
+
+                            readingProgressDiv.textContent = readingTutorAI.getProgressReport();
+                            
+                            // Show next question button
+                            nextQuestionButton.style.display = 'block';
+                        });
+                        readingExerciseDiv.appendChild(button);
+                    });
+                } else {
+                    // For free-text answers, show text input
+                    textAnswerSection.style.display = 'block';
+                    answerContainer.style.display = 'block';
+                }
+            } catch (error) {
+                readingFeedbackDiv.textContent = 'An error occurred while generating the exercise. Please try again.';
+                readingFeedbackDiv.className = 'feedback error';
+                console.error('Error during exercise generation:', error);
+                readingExerciseDiv.innerHTML = '<p>Failed to generate exercise. Please try again.</p>';
+            }
+        }
+        
+        // Event listener for the Generate Exercise button
+        generateReadingExerciseButton.addEventListener('click', async () => {
+            const readingLevel = parseInt(readingLevelSelect.value);
+            await generateExercise(readingLevel);
+        });
+        
+        // Event listener for Next Question button
+        nextQuestionButton.addEventListener('click', async () => {
+            await generateExercise(currentReadingLevel);
+        });
+
+        submitReadingAnswerButton.addEventListener('click', () => {
+            const userAnswer = readingAnswerInput.value.trim().toLowerCase();
+
+            if (!userAnswer) {
+                readingFeedbackDiv.textContent = 'Please enter an answer.';
+                readingFeedbackDiv.className = 'feedback error';
+                return;
+            }
+
+            if (!currentReadingSolution) {
+                readingFeedbackDiv.textContent = 'Please generate an exercise first.';
+                readingFeedbackDiv.className = 'feedback error';
+                return;
+            }
+            
+            if (questionAnswered) return; // Prevent multiple answers
+            
+            questionAnswered = true;
+
+            // Strip letter prefix from solution for text input comparison (e.g., "A. The answer" becomes "the answer")
+            let processedSolution = currentReadingSolution.toLowerCase();
+            if (/^[a-d]\.\s+/i.test(processedSolution)) {
+                processedSolution = processedSolution.replace(/^[a-d]\.\s+/i, '');
+            }
+
+            const isCorrect = userAnswer === processedSolution || userAnswer === currentReadingSolution.toLowerCase();
+            readingTutorAI.trackProgress(isCorrect);
+
+            if (isCorrect) {
+                readingFeedbackDiv.textContent = 'Correct! 🎉';
+                readingFeedbackDiv.className = 'feedback';
+            } else {
+                readingFeedbackDiv.textContent = `Incorrect. The correct answer is: "${currentReadingSolution}".`;
+                readingFeedbackDiv.className = 'feedback error';
+            }
+
+            readingProgressDiv.textContent = readingTutorAI.getProgressReport();
+            
+            // Show next question button
+            nextQuestionButton.style.display = 'block';
+            
+            // Clear the answer input
+            readingAnswerInput.value = '';
+        });
+    </script>
+</body>
+</html>

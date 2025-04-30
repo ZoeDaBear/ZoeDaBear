@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Education Hub</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-image: url('TutorHomepagebackground.png');
+            background-size: cover;
+            background-position: center;
+            color: #fff;
+        }
+        .homepage-container {
+            text-align: center;
+            padding: 50px;
+            background: rgba(0, 0, 0, 0.7); /* Semi-transparent background for readability */
+            border-radius: 10px;
+            max-width: 800px;
+            margin: 100px auto;
+        }
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+        .subjects {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+        }
+        .subject {
+            background: rgba(255, 255, 255, 0.9);
+            color: #000;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            width: 150px;
+            cursor: pointer;
+            transition: transform 0.3s, background 0.3s;
+        }
+        .subject:hover {
+            transform: scale(1.1);
+            background: #4caf50;
+            color: #fff;
+        }
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+    </style>
+</head>
+<body>
+    <div class="homepage-container">
+        <h1>Welcome to Education Hub</h1>
+        <p>Select a subject to get started:</p>
+        <div class="subjects">
+            <div class="subject"><a href="mathTutor.html">Math Tutor</a></div>
+            <div class="subject"><a href="readingTutor.html">Reading Tutor</a></div>
+            <div class="subject"><a href="scienceTutor.html">Science Tutor</a></div>
+            <div class="subject"><a href="historyTutor.html">History Tutor</a></div>
+            <div class="subject"><a href="languageArtsTutor.html">Language Arts Tutor</a></div>
+        </div>
+    </div>
+</body>
+</html>

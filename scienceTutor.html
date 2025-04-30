@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Science Tutor AI</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-image: url('ScienceBackground.png');
+            background-size: cover;
+            background-position: center;
+            color: #fff;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        select, input, button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 5px;
+        }
+        button {
+            cursor: pointer;
+        }
+        .problem {
+            font-size: 1.2em;
+            margin: 20px 0;
+        }
+        .feedback {
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .options-container button {
+            display: block;
+            width: 80%;
+            margin: 10px auto;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            color: #333;
+            text-align: left;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .options-container button:hover {
+            background-color: #e0e0e0;
+        }
+        .correct {
+            background-color: #aaffaa !important;
+        }
+        .incorrect {
+            background-color: #ffaaaa !important;
+        }
+    </style>
+    <a href="tutorHomepage.html" style="color: #4caf50; text-decoration: none; font-weight: bold;">&larr; Back to Home</a>
+</head>
+<body>
+    <h1>Science Tutor AI</h1>
+    <select id="scienceLevel">
+        <option value="" disabled selected>Select a science level</option>
+        <option value="1">Elementary</option>
+        <option value="2">Middle School</option>
+        <option value="3">High School</option>
+    </select>
+    <button id="generateQuestion">Generate Question</button>
+    <div id="question"></div>
+    <div id="options" class="options-container"></div>
+    <div id="feedback"></div>
+    <button id="nextQuestion" style="display: none;">Next Question</button>
+
+    <script>
+        class ScienceTutorAI {
+            constructor() {
+                this.apiKey = "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";
+                this.models = [
+                    "mistralai/mistral-7b-instruct",
+                    "huggingfaceh4/zephyr-7b",
+                    "google/gemma-2-9b"
+                ];
+                this.currentModelIndex = 0;
+                this.correctAnswer = "";
+                this.correctAnswerFull = "";
+            }
+
+            async generateQuestion(level) {
+                const levelDescriptions = {
+                    1: "elementary level science (ages 7-10), basic questions about nature, animals, and physical world",
+                    2: "middle school science (ages 11-13), including basic biology, chemistry, and physics concepts",
+                    3: "high school science (ages 14-17), including applied biology, physics, chemistry, and earth science"
+                };
+
+                const prompt = `Generate a multiple choice science question for a ${levelDescriptions[level]}. Include:
+- A short question
+- 4 answer options (A-D)
+- The correct answer with the letter and full text
+
+Format like this:
+
+Question: [The question]
+
+Options:
+A. Option 1
+B. Option 2
+C. Option 3
+D. Option 4
+
+Answer: [Correct letter]. [Full correct answer]`;
+
+                let attempts = 0;
+                while (attempts < this.models.length) {
+                    const model = this.models[this.currentModelIndex];
+                    try {
+                        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "Authorization": `Bearer ${this.apiKey}`,
+                                "HTTP-Referer": window.location.href
+                            },
+                            body: JSON.stringify({
+                                model,
+                                messages: [{ role: "user", content: prompt }]
+                            })
+                        });
+
+                        if (!response.ok) {
+                            throw new Error(await response.text());
+                        }
+
+                        const data = await response.json();
+                        const content = data.choices[0].message.content;
+
+                        return this.parseResponse(content);
+                    } catch (err) {
+                        console.error(`Error with model ${model}:`, err);
+                        this.currentModelIndex = (this.currentModelIndex + 1) % this.models.length;
+                        attempts++;
+                    }
+                }
+
+                throw new Error("All models failed.");
+            }
+
+            parseResponse(text) {
+                const questionMatch = text.match(/Question:\s*(.+?)\n/);
+                const optionsMatch = text.match(/Options:\s*([\s\S]*?)\nAnswer:/);
+                const answerMatch = text.match(/Answer:\s*([A-D])\.\s*(.+)/);
+
+                if (!questionMatch || !optionsMatch || !answerMatch) {
+                    throw new Error("Failed to parse response");
+                }
+
+                const question = questionMatch[1].trim();
+                const options = optionsMatch[1].trim().split('\n').map(opt => opt.trim());
+                const answerLetter = answerMatch[1].trim();
+                this.correctAnswerFull = answerMatch[2].trim();
+
+                const correctAnswerOption = options.find(opt => opt.startsWith(answerLetter + "."));
+                this.correctAnswer = correctAnswerOption ? correctAnswerOption.substring(3).trim() : "";
+
+                return { question, options };
+            }
+
+            checkAnswer(selectedOption) {
+                const normalize = str => str.trim().toLowerCase().replace(/\s+/g, ' ');
+                return normalize(selectedOption) === normalize(this.correctAnswer);
+            }
+        }
+
+        const tutor = new ScienceTutorAI();
+        const levelSelect = document.getElementById("scienceLevel");
+        const generateBtn = document.getElementById("generateQuestion");
+        const questionDiv = document.getElementById("question");
+        const optionsDiv = document.getElementById("options");
+        const feedbackDiv = document.getElementById("feedback");
+        const nextQuestionBtn = document.getElementById("nextQuestion");
+        let currentOptionsButtons = [];
+
+        generateBtn.addEventListener("click", async () => {
+            const level = levelSelect.value;
+            if (!level) {
+                feedbackDiv.textContent = "Please select a level.";
+                return;
+            }
+
+            questionDiv.textContent = "Loading...";
+            optionsDiv.innerHTML = "";
+            feedbackDiv.textContent = "";
+            nextQuestionBtn.style.display = "none";
+            currentOptionsButtons = [];
+
+            try {
+                const { question, options } = await tutor.generateQuestion(level);
+                questionDiv.textContent = question;
+                optionsDiv.innerHTML = "";
+
+                options.forEach(opt => {
+                    const btn = document.createElement("button");
+                    btn.textContent = opt;
+                    btn.onclick = () => {
+                        currentOptionsButtons.forEach(b => {
+                            b.classList.remove("correct");
+                            b.classList.remove("incorrect");
+                            b.disabled = true;
+                        });
+                        btn.disabled = false;
+                        const selectedAnswer = opt.substring(3).trim();
+                        const isCorrect = tutor.checkAnswer(selectedAnswer);
+                        if (isCorrect) {
+                            btn.classList.add("correct");
+                            feedbackDiv.textContent = "✅ Correct!";
+                        } else {
+                            btn.classList.add("incorrect");
+                            feedbackDiv.textContent = `❌ Incorrect. The correct answer was: ${tutor.correctAnswerFull}`;
+                            currentOptionsButtons.forEach(b => {
+                                const optionText = b.textContent.substring(3).trim();
+                                if (tutor.checkAnswer(optionText)) {
+                                    b.classList.add("correct");
+                                }
+                            });
+                        }
+                        nextQuestionBtn.style.display = "block";
+                    };
+                    optionsDiv.appendChild(btn);
+                    currentOptionsButtons.push(btn);
+                });
+            } catch (e) {
+                questionDiv.textContent = "Failed to load question.";
+                feedbackDiv.textContent = e.message;
+                console.error(e);
+            }
+        });
+
+        nextQuestionBtn.addEventListener("click", async () => {
+            const level = levelSelect.value;
+            if (!level) {
+                feedbackDiv.textContent = "Please select a level.";
+                return;
+            }
+
+            questionDiv.textContent = "Loading...";
+            optionsDiv.innerHTML = "";
+            feedbackDiv.textContent = "";
+            nextQuestionBtn.style.display = "none";
+            currentOptionsButtons = [];
+
+            try {
+                const { question, options } = await tutor.generateQuestion(level);
+                questionDiv.textContent = question;
+                optionsDiv.innerHTML = "";
+
+                options.forEach(opt => {
+                    const btn = document.createElement("button");
+                    btn.textContent = opt;
+                    btn.onclick = () => {
+                        currentOptionsButtons.forEach(b => {
+                            b.classList.remove("correct");
+                            b.classList.remove("incorrect");
+                            b.disabled = true;
+                        });
+                        btn.disabled = false;
+                        const selectedAnswer = opt.substring(3).trim();
+                        const isCorrect = tutor.checkAnswer(selectedAnswer);
+                        if (isCorrect) {
+                            btn.classList.add("correct");
+                            feedbackDiv.textContent = "✅ Correct!";
+                        } else {
+                            btn.classList.add("incorrect");
+                            feedbackDiv.textContent = `❌ Incorrect. The correct answer was: ${tutor.correctAnswerFull}`;
+                            currentOptionsButtons.forEach(b => {
+                                const optionText = b.textContent.substring(3).trim();
+                                if (tutor.checkAnswer(optionText)) {
+                                    b.classList.add("correct");
+                                }
+                            });
+                        }
+                        nextQuestionBtn.style.display = "block";
+                    };
+                    optionsDiv.appendChild(btn);
+                    currentOptionsButtons.push(btn);
+                });
+            } catch (e) {
+                questionDiv.textContent = "Failed to load question.";
+                feedbackDiv.textContent = e.message;
+                console.error(e);
+            }
+        });
+    </script>
+</body>
+</html>

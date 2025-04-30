@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Language Arts Tutor</title>
+ <style>
+  body {
+   font-family: Arial, sans-serif;
+   margin: 20px;
+   background-image: url('LanguageArtsBackground.png');
+   background-size: cover;
+   background-position: center;
+   color: #fff;
+  }
+  .container {
+   max-width: 600px;
+   margin: auto;
+   background: rgba(0, 0, 0, 0.8);
+   padding: 20px;
+   border-radius: 10px;
+  }
+  .problem {
+   font-size: 1.2em;
+   margin: 20px 0;
+   line-height: 1.5;
+   background: rgba(255, 255, 255, 0.1);
+   padding: 15px;
+   border-radius: 8px;
+  }
+  .feedback {
+   font-weight: bold;
+   color: #4caf50;
+   margin-top: 10px;
+   display: block;
+  }
+  .error {
+   color: #f44336;
+   margin-top: 10px;
+   display: block;
+  }
+  .loading {
+   display: inline-block;
+   width: 20px;
+   height: 20px;
+   border: 3px solid rgba(255,255,255,.3);
+   border-radius: 50%;
+   border-top-color: #fff;
+   animation: spin 1s ease-in-out infinite;
+   margin-left: 10px;
+  }
+  @keyframes spin {
+   to { transform: rotate(360deg); }
+  }
+  .option {
+   display: block;
+   width: calc(100% - 22px);
+   padding: 10px;
+   margin: 5px 0;
+   text-align: left;
+   cursor: pointer;
+   border: 1px solid #555;
+   border-radius: 5px;
+   background-color: #333;
+   color: white;
+  }
+  .option:hover {
+   background-color: #555;
+  }
+  .option.correct {
+   background-color: #81c784;
+   color: #fff;
+  }
+  .option.incorrect {
+   background-color: #e57373;
+   color: #fff;
+  }
+  .next-button {
+   background-color: #4caf50;
+   color: white;
+   font-weight: bold;
+   padding: 10px 15px;
+   margin-top: 15px;
+   border: none;
+   border-radius: 5px;
+   display: none;
+   width: calc(100% - 22px);
+  }
+  .next-button:hover {
+   background-color: #388e3c;
+  }
+  #question-container {
+   margin-top: 20px;
+   padding: 15px;
+   background: rgba(255, 255, 255, 0.1);
+   border-radius: 8px;
+   text-align: center;
+   font-size: 1.1em;
+   line-height: 1.6;
+  }
+  #answer-options {
+   display: grid;
+   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+   gap: 10px;
+   margin-bottom: 20px;
+  }
+  .controls {
+   display: flex;
+   justify-content: center;
+   gap: 15px;
+   margin-top: 30px;
+  }
+  .back-home {
+   margin-top: 20px;
+   text-align: center;
+  }
+  .back-home a {
+   color: #81D4FA;
+   text-decoration: none;
+   font-weight: bold;
+  }
+  .back-home a:hover {
+   text-decoration: underline;
+  }
+  #progress {
+   text-align: center;
+   margin-bottom: 10px;
+   font-style: italic;
+   color: #ccc;
+  }
+  #level-select-container {
+   text-align: center;
+   margin-bottom: 20px;
+  }
+  #level-select {
+   padding: 10px 15px;
+   font-size: 1em;
+   border-radius: 5px;
+  }
+ </style>
+</head>
+<body>
+ <div class="container">
+  <h1>Language Arts Tutor</h1>
+  <div id="level-select-container">
+   <label for="level-select">Choose your level:</label>
+   <select id="level-select">
+    <option value="" disabled selected>Select a school level</option>
+    <option value="elementary">Elementary School</option>
+    <option value="middle">Middle School</option>
+    <option value="high">High School</option>
+   </select>
+  </div>
+  <div id="progress"></div>
+  <div id="question-container">
+   <p class="loading"></p>
+  </div>
+  <div id="answer-options"></div>
+  <div id="feedback" class="hidden"></div>
+  <div class="controls">
+   <button id="next-question" class="next-button hidden">Next Question</button>
+   <button id="restart-quiz" class="next-button hidden">Restart Quiz</button>
+  </div>
+  <p id="api-error" class="error hidden"></p>
+ </div>
+ <div class="back-home">
+  <a href="tutorHomepage.html">Back to Homepage</a>
+ </div>
+
+ <script>
+  const questionContainer = document.getElementById('question-container');
+  const answerOptions = document.getElementById('answer-options');
+  const feedback = document.getElementById('feedback');
+  const nextButton = document.getElementById('next-question');
+  const restartButton = document.getElementById('restart-quiz');
+  const apiError = document.getElementById('api-error');
+  const progressDisplay = document.getElementById('progress');
+  const levelSelect = document.getElementById('level-select');
+  const levelSelectContainer = document.getElementById('level-select-container');
+
+  let currentLevel = '';
+  let score = 0;
+  let currentQuestionIndex = 0;
+  let allQuestions = [];
+  let currentQuestion = null;
+  const openRouterKey = "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";
+  const selectedModel = "openai/gpt-3.5-turbo";
+
+  function resetState() {
+   questionContainer.innerHTML = '';
+   answerOptions.innerHTML = '';
+   feedback.classList.add('hidden');
+   nextButton.style.display = 'none';
+   restartButton.style.display = 'none';
+   apiError.classList.add('hidden');
+   score = 0;
+   currentQuestionIndex = 0;
+   allQuestions = [];
+  }
+
+  function disableOptions() {
+   answerOptions.querySelectorAll('.option').forEach(btn => {
+    btn.disabled = true;
+    btn.classList.add('cursor-not-allowed');
+   });
+  }
+
+  function enableOptions() {
+   answerOptions.querySelectorAll('.option').forEach(btn => {
+    btn.disabled = false;
+    btn.classList.remove('cursor-not-allowed');
+   });
+  }
+
+  async function fetchQuestions(level) {
+   resetState();
+   questionContainer.innerHTML = '<p class="loading"></p>';
+   const prompt = `Generate 10 multiple choice Language Arts questions for ${level} students. Use format: question, A), B), C), D), then "Answer: X)" at end. Separate questions with '---'.`;
+
+   try {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+     method: 'POST',
+     headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${openRouterKey}`,
+      'HTTP-Referer': window.location.hostname,
+      'X-Title': document.title,
+     },
+     body: JSON.stringify({
+      model: selectedModel,
+      messages: [{ role: "user", content: prompt }],
+     }),
+    });
+
+    const data = await response.json();
+    const raw = data.choices[0].message.content;
+    allQuestions = raw.split('---').map(q => q.trim()).map(parseQuestion).filter(Boolean);
+    showQuestion();
+   } catch (e) {
+    apiError.textContent = `Error: ${e.message}`;
+    apiError.classList.remove('hidden');
+   }
+  }
+
+  function parseQuestion(text) {
+   const match = text.match(/^(.*?)(?:\nA\)\s*)(.*?)(?:\nB\)\s*)(.*?)(?:\nC\)\s*)(.*?)(?:\nD\)\s*)(.*?)(?:\n(?:Answer:|Correct Answer:)\s*([A-D]))/s);
+   if (!match) return null;
+   return {
+    question: match[1].trim(),
+    options: [match[2], match[3], match[4], match[5]].map(o => o.trim()),
+    answer: match[6].trim()
+   };
+  }
+
+  function showQuestion() {
+   if (currentQuestionIndex < allQuestions.length) {
+    currentQuestion = allQuestions[currentQuestionIndex];
+    questionContainer.textContent = currentQuestion.question;
+    answerOptions.innerHTML = currentQuestion.options.map((option, i) => {
+     const letter = String.fromCharCode(65 + i);
+     return `<button class="option" data-option="${letter}">${letter}) ${option}</button>`;
+    }).join('');
+    enableOptions();
+    feedback.classList.add('hidden');
+    nextButton.style.display = 'none';
+    progressDisplay.textContent = `Question ${currentQuestionIndex + 1} of ${allQuestions.length}`;
+   } else {
+    endQuiz();
+   }
+  }
+
+  function checkAnswer(selected) {
+   disableOptions();
+   const correct = currentQuestion.answer;
+   const isCorrect = selected === correct;
+   feedback.textContent = isCorrect ? "Correct!" : `Incorrect. Correct answer: ${correct}.`;
+   feedback.className = isCorrect ? 'feedback' : 'error';
+   feedback.classList.remove('hidden');
+   if (isCorrect) score++;
+
+   answerOptions.querySelectorAll('.option').forEach(btn => {
+    const opt = btn.getAttribute('data-option');
+    if (opt === correct) btn.classList.add('correct');
+    else if (opt === selected && !isCorrect) btn.classList.add('incorrect');
+   });
+
+   nextButton.textContent = currentQuestionIndex === allQuestions.length - 1 ? "Finish Quiz" : "Next Question";
+   nextButton.style.display = 'block';
+  }
+
+  function endQuiz() {
+   questionContainer.textContent = "Quiz Complete!";
+   answerOptions.innerHTML = '';
+   feedback.textContent = `Final Score: ${score} / ${allQuestions.length}`;
+   feedback.className = 'feedback';
+   feedback.classList.remove('hidden');
+   nextButton.style.display = 'none';
+   restartButton.style.display = 'block';
+   progressDisplay.textContent = '';
+  }
+
+  function restartQuizHandler() {
+   currentQuestionIndex = 0;
+   score = 0;
+   feedback.classList.add('hidden');
+   restartButton.style.display = 'none';
+   fetchQuestions(currentLevel);
+  }
+
+  levelSelect.addEventListener('change', e => {
+   currentLevel = e.target.value;
+   fetchQuestions(currentLevel);
+  });
+
+  answerOptions.addEventListener('click', e => {
+   const btn = e.target.closest('.option');
+   if (btn) checkAnswer(btn.getAttribute('data-option'));
+  });
+
+  nextButton.addEventListener('click', () => {
+   currentQuestionIndex++;
+   showQuestion();
+  });
+
+  restartButton.addEventListener('click', restartQuizHandler);
+ </script>
+</body>
+</html>
